@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta htmx.config.allowScriptTags="true">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="/bootstrap.5.3.3.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+<title>HTMX playground</title>
+<!-- <link rel="stylesheet" src="./boostrap.5.3.3.min.css" /> -->
+<script src="/htmx.2.0.1.min.js"></script>
+<script src="/ws.2.0.1.js"></script>
+<script src="/debug.2.0.1.js"></script>
+<script src="/loading-states.2.0.1.js"></script>
+<script src="/idiomorph-ext.0.3.0.js"></script>
+
+<script src="/video.8.17.2.min.js"></script>
+<script src="/videojs-playlist.5.1.2.min.js"></script>
+<link rel="stylesheet" href="/video-js.8.17.2.css" />
+
+<style>
+.track-playing { font-weight: bold; }
+
+</style>
+
+<script>
+const playlist = [
+% for my $track ($tracks->entries->@* ) {
+  { sources: [{ type: "audio/mpeg", src: "/media/asset/<%= Mojo::File->new( $track->{ name })->to_rel($base) %>" }],},
+% }
+];
+</script>
+
+<script>
+var player;
+function initPlayer() {
+    player = videojs.getPlayer('my-player');
+    player.playlist( playlist );
+
+    // Update our display
+    player.on("playlistitem", (i) => {
+      const track = player.playlist.currentIndex();
+
+      const tracks = document.querySelectorAll(".track-playing");
+      for (let elt of tracks) {
+          elt.classList.remove("track-playing");
+      };
+
+      const el = document.getElementById("track-"+track);
+      // Remove the "track-playing" class from all tracks
+      if( el ) {
+        el.classList.add("track-playing");
+      };
+    });
+
+    // Our own implementation of autoadvance, since the one videojs has
+    // in the playlist plugin does not seem to work?!
+    player.on("ended", (e) => {
+      if( player.playlist.nextIndex() >= 1 ) {
+        player.playlist.next();
+      };
+    });
+}
+
+function playTrack(track) {
+  let item = playlist[track];
+  player.playlist.currentItem(track);
+  player.ready( () => {
+      player.play();
+  });
+}
+</script>
+
+</head>
+<body
+  hx-boost="true"
+   hx-select="#mymain"
+   hx-target="#mymain"
+   hx-swap="outerHTML"
+   onload="window.setTimeout(() =&gt; { initPlayer(); }, 1000)"
+>
+  <div id="container" hx-history-elt>
+
+% my $i = 0;
+% for my $track ($tracks->entries->@*) {
+      <div class="track-play" id="track-<%= 0+$i %>" hx-on:click="playTrack(<%= $i++ %>);">
+      <div class="track-title">
+        <%= Mojo::File->new( $track->name )->basename %>
+      </div>
+
+      </div>
+      <!-- play link to track (?) -->
+      <!-- highlight active track?! -->
+    </div>
+% }
+  <div id="player">
+  <video
+    id="my-player"
+    class="video-js"
+    controls
+    preload="auto"
+    autoplay="true"
+% if( $tracks->album_art ) {
+    poster="/media/image/<%= Mojo::File->new( $tracks->album_art->name )->to_rel( $base ) %>"
+% }
+    type="audio/mpeg"
+    data-setup='{}'>
+  <p class="vjs-no-js">
+    To view this video please enable JavaScript
+  </p>
+  </video>
+  </div>
+</body>
+</html>

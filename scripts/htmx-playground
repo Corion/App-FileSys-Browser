@@ -1,0 +1,539 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+use Mojolicious::Lite;
+use File::Basename 'dirname';
+
+use lib 'lib';
+
+use 5.020; # for signatures
+use feature 'signatures';
+no warnings 'experimental::signatures';
+
+use Mojo::URL;
+use Mojo::File 'path';
+
+use lib '../Filesys-DB/lib';
+use lib '../Filesys-Scanner/lib';
+use Filesys::DB;
+use Audio::Directory;
+use DBD::SQLite::Constants ':file_open';
+
+#use MojoX::ChangeNotify;
+package MojoX::ChangeNotify {
+    use strict;
+    use warnings;
+
+    use File::ChangeNotify;
+    use File::ChangeNotify::Event;
+    use Mojo::IOLoop::Subprocess;
+    use Mojo::Base 'Mojo::EventEmitter';
+
+    use 5.020; # for signatures
+    use feature 'signatures';
+    no warnings 'experimental::signatures';
+
+    has 'child';
+
+    sub instantiate_watcher($self, %options) {
+        my $subprocess = Mojo::IOLoop::Subprocess->new();
+        $self->child( $subprocess );
+
+        $subprocess->on('progress' => sub( $subprocess, @events ) {
+            # Emit "changed" events
+
+            for my $ev (@events) {
+                delete $ev->{attributes} unless $ev->{has_attributes};
+                delete $ev->{content} unless $ev->{has_content};
+
+                $self->emit( $ev->{type}, File::ChangeNotify::Event->new( $ev ));
+            };
+        });
+
+        # Operation that would block the event loop for 5 seconds (with promise)
+        $subprocess->run_p(sub($subprocess) {
+            my $watcher = File::ChangeNotify->instantiate_watcher( %options );
+            while( my @events = $watcher->wait_for_events()) {
+                #warn sprintf "Child got '%s'", $events[0]->type;
+
+                @events = map {
+                    +{ type           => $_->type,
+                       path           => $_->path,
+                       attributes     => $_->attributes,
+                       has_attributes => $_->has_attributes,
+                       content        => $_->content,
+                       has_content    => $_->has_content,
+                    },
+                } @events;
+
+                $subprocess->progress( @events );
+            };
+        })->catch(sub  {
+            my $err = shift;
+            say "Subprocess error: $err";
+        });
+    };
+
+    # emits "changed"
+
+};
+
+use Getopt::Long ':config', 'pass_through';
+GetOptions(
+);
+
+my @args = @ARGV;
+
+my $watcher = MojoX::ChangeNotify->new();
+
+$ENV{MOJO_HOME} //= path($ENV{MOJO_EXE})->dirname->to_abs->to_string;
+
+my $app_path = path($ENV{MOJO_EXE})->dirname->to_abs->to_string;
+my $app_file = path($ENV{MOJO_EXE})->to_abs->to_string;
+my $library_path = path($ENV{MOJO_EXE})->dirname->sibling('lib')->to_abs->to_string;
+$watcher->instantiate_watcher(
+    directories => [
+        $app_path,
+        $library_path,
+        "$ENV{MOJO_HOME}/templates",
+        "$ENV{MOJO_HOME}/public"
+    ],
+);
+
+my $last_id = 1;
+my %clients;
+my $app_version = $$; # not great, but good enough until we exec() for restarting
+say "App version: $app_version";
+
+sub add_client( $client ) {
+    # It seems that we need some kind of PING / PONG here
+    #state $heartbeat = Mojo::IOLoop->timer( 10 => sub($t) {
+    #    for my $c (values %clients) {
+    #        use Mojo::WebSocket qw(WS_PING);
+    #        local $| = 1;
+    #        #print "\rPING\r";
+    #        $client->send([1, 0, 0, 0, WS_PING, '']);
+    #    };
+    #});
+    $client = $client->inactivity_timeout(3600);
+    my $client_version = $client->param('version');
+
+    my $id = $last_id++;
+    my $clients = \%clients;
+    $clients->{ $id } = $client->tx;
+    $client->on(finish => sub( $c, @rest ) {
+        say "Client $id went away";
+        delete $clients->{ $id };
+    });
+
+    $client->on('json' => sub ($c, $msg) {
+        #use Data::Dumper;
+        #warn "Client message: " . Dumper $msg;
+        if( $client_version != $app_version ) {
+            say "Client needs reload, trying to force a reload";
+            # We should note when we have upgraded the client
+
+            # We should re-use the cookie of the client (if we have one)
+            my $url = Mojo::URL->new( $msg->{url} );
+            my $this = $c->req->url;
+            $this->path_query( $url->path_query );
+            my $dom = $c->ua->get($this)->result;
+            my $html = $dom->content->asset->slurp;
+            $html =~ s!^.*?(<body\b.*</body>)!$1!sm;
+
+            say "Sending new HTML";
+            $client->send( { text => "$html" });
+            #$c->reply(text => $html);
+        };
+
+    });
+
+    #say "Added client $id as WS client";
+    $id;
+}
+
+sub notify_client( $client_id, @actions ) {
+    say "Notifying $client_id";
+    my $client = $clients{ $client_id };
+    for my $action (@actions) {
+        $client->send($action);
+    };
+}
+
+sub notify_clients( @actions ) {
+    my $clients = \%clients;
+    for my $client_id (sort keys %$clients ) {
+        notify_client( $client_id, @actions );
+    };
+}
+
+sub restart_server() {
+    # Get a new PID for us
+    if( 0 == fork ) {
+        say "New PID: $$";
+        while( 1 ) {
+            if(! exec $0 => @ARGV ) {
+                say "Error respawning, sleeping for 10 seconds";
+                sleep 10;
+            };
+        };
+    } else {
+        exit;
+    };
+}
+
+sub file_changed( $self, $ev ) {
+    say "Modified: $ev->{path}";
+
+    my $dirty;
+
+    if( $ev->path eq $app_file ) {
+        # reload ourselves
+        say "Reloading $0";
+        $dirty = 1;
+        restart_server();
+
+    } elsif( $ev->path =~ m!^\Q$library_path\b! ) {
+        # reload ourselves
+        say "Reloading libraries for $0";
+        $dirty = 1;
+        restart_server();
+
+    } elsif( dirname($ev->path) =~ /\btemplates$/ and $ev->path =~ /\.(?:html|css|js)(?:\.ep)?$/) {
+        say "Reloading templates";
+        app->renderer->cache( Mojo::Cache->new ); # boom
+        $dirty = 1;
+
+    } else {
+        # maybe some other input data changed, so we can merely update the page?!
+    };
+
+    if( $dirty ) {
+        say "Force-reloading the client";
+        my $html = q{<script id="server_script">window.location.reload()</script>};
+        notify_clients($html);
+    };
+};
+$watcher->on('create' => \&file_changed);
+$watcher->on('modify' => \&file_changed);
+
+websocket '/notify' => sub($c) {
+    my $client_id = add_client( $c );
+
+    # Just in case an old client reconnects
+    # Maybe that client could tell us what version it has so we don't render
+    # this page twice?! Also, what tab it has?!
+    # Also, when restarting ourselves, $$ does not change, need to fix
+    if( $c->param('version') != $app_version ) {
+        say sprintf "Updating client page (%d => %d)", $c->param('version'), $app_version;
+        #render_index($c);
+        #my $html = $c->render_to_string('index');
+        my $html = q{<body><script>windows.location.reload()</script></body>};
+        # Maybe we can query the client where they are right now?!
+        notify_client( $client_id => $html );
+    };
+};
+
+get '/' => sub( $c ) {
+    $c->redirect_to('index.html');
+};
+
+sub render_index( $c ) {
+    $c->stash( version => $$ );
+    $c->stash( preview => $c->param('preview') // '(none)' );
+    $c->render(template => 'index');
+};
+get '/index.html' => \&render_index;
+post '/index.html' => sub($c) {
+    #for my $p ($c->req->params->names->@*) {
+    #    say "$p -> " . $c->param($p);
+    #}
+    my @votes = grep { /^vote_/ } $c->req->params->names->@*;
+    if( $c->req->headers->header('HX-Request')) {
+        say "Returning just the vote field $votes[0] -> " . $c->param($votes[0]);
+        $c->render( text => sprintf q{<div class="vote">%s</div>}, $c->param( $votes[0] ));
+    } else {
+        say "Returning the full page";
+        # Can we implement a redirect to a GET request here?!
+        # so that reloading can happen without problems?
+        return render_index($c);
+    }
+};
+
+get '/htmx.2.0.1.min.js' => sub($c) {
+    my $fn = "htmx.2.0.1.min.js";
+    my $base = "$ENV{MOJO_HOME}/public";
+    my $file = "$base/$fn";
+    my $gzipped = "$file.gz";
+    if( -e "$gzipped" ) {
+        $file = $gzipped;
+        $c->res->headers->content_encoding('gzip');
+    };
+    my $ct = app->types->type("js");
+    $c->res->headers->content_type($ct);
+    $c->reply->file($file);
+    return 200;
+};
+
+get '/query/:name' => sub( $c ) {
+    # Get results for one specific query
+    my $q = $c->param('name');
+
+    #(my $query) = grep { $_->{title} eq $q } $app->queries->@*;
+    #my @results = $app->run_queries( $query );
+    #$c->stash( res => $results[0] );
+    $c->render( 'query' );
+};
+
+post '/preview' => sub( $c ) {
+    # Get results for one specific query
+    use Text::Markdown 'markdown';
+    my $q = $c->param('content');
+    my $html = markdown( $q );
+    my $l = Mojo::IOLoop->singleton;
+    $l->timer(2 => sub {
+        say "Rendering now";
+        $c->stash( preview => $html );
+        $c->render( 'preview' );
+    });
+    $c->render_later();
+    return undef;
+};
+
+get '/ui' => 'ui';
+
+sub parse_tags( $params, $newtag ) {
+    my @tags;
+    #use Data::Dumper;
+    #say Dumper $params->pairs;
+
+    for my $tag ($params->names->@*) {
+        if( $tag =~ /tag_(\w+)\z/ ) {
+            push @tags, { name => $1, id => "$1" };
+        } else {
+            my $entered = $params->param($tag);
+            if( $newtag or (length $entered and $entered =~ /\S/ and $entered =~ /\s+\z/) ) {
+                if( length $entered and $entered =~ /\S/ ) {
+                    $entered =~ s/\s+\z//;
+                    say "Adding new tag '$entered'";
+                    push @tags, { name => $entered, id => "$entered" };
+                }
+            }
+        }
+    };
+
+
+    return @tags;
+}
+
+our @tags = ({ name => 'tag1', id => 1 },
+             { name => 'tag3', id => 3 },
+             { name => 'tag2', id => 2 },
+             { name => 'tag4', id => 4 },
+            );
+any '/tags.html' => sub($c) {
+    my $entered = $c->param('tags');
+
+    my $template = 'tags'; # assume the complete page
+
+    my $p = $c->req->params;
+    if( $c->req->method eq 'POST' ) {
+        @tags = parse_tags( $p, 1 );
+        $entered = '';
+    };
+
+    $c->stash( tags => \@tags );
+    $c->stash( tagtext => $entered );
+    $c->render($template)
+};
+
+any '/tag-form.html' => sub($c) {
+    @tags = parse_tags( $c->req->params, 0 );
+    $c->stash( tags => \@tags );
+
+    my $entered = $c->param('tags');
+    if( $entered =~ /\s+\z/ ) {
+        $entered = '';
+    };
+    $c->stash( tagtext => $entered );
+    say "New tagtext is '$entered'";
+    $c->render('tag-form')
+};
+
+my $filesystem = Filesys::DB->new(
+    dbh => {
+        dsn  => 'dbi:SQLite:dbname=/var/run/user/1000/gvfs/smb-share:server=dune,share=corion/bin/Filesys-DB/db/filesys-db.sqlite',
+        options => {
+            sqlite_open_flags => SQLITE_OPEN_READONLY(),
+            RaiseError => 1,
+            PrintError => 0,
+        },
+    }
+);
+$filesystem->init_config(
+    default_config_file => '../Filesys-DB/filesys-db.yaml',
+);
+
+sub get_recent( $count=20, $offset=0) {
+    say "Fetching from DB";
+    my $items = $filesystem->selectall_named( <<'SQL' );
+    with latest_changed_audio_directories as (
+        select c.collection_id
+             , c.parent_id
+             , c.title
+             , max(e.mtime) as last_update
+          FROM filesystem_membership m
+          join filesystem_collection c on m.collection_id=c.collection_id
+          join filesystem_entry e on m.entry_id=e.entry_id
+         where e.mime_type like 'audio/%'
+           and c.collection_type = 'directory'
+      group by c.title, c.parent_id, c.collection_id
+      order by last_update desc
+         limit 20
+        offset 0
+    )
+    select c.title
+         , c.collection_id
+         , ce.filename as directory
+         , e.filename as filename
+         , e.mountpoint as mountpoint
+      from latest_changed_audio_directories c
+      join filesystem_membership m on m.collection_id = c.collection_id
+      join filesystem_entry e on m.entry_id = e.entry_id
+      join filesystem_entry ce on c.parent_id = ce.entry_id
+     where (e.mime_type like 'audio/%' or e.mime_type like 'image/%')
+    order by c.collection_id desc, mountpoint, filename
+SQL
+
+    # Now, regroup things into a "hierarchy" again:
+    my @res;
+    my $curr;
+    my $id = 0;
+    say "Fetching FS entries";
+    for my $i (@$items) {
+        $i->{filename} = $filesystem->_inflate_filename( $i->{mountpoint}, $i->{filename});
+        $i->{directory} = $filesystem->_inflate_filename( $i->{mountpoint}, $i->{directory});
+        if( $id != $i->{collection_id}) {
+            if( $curr ) {
+                push @res, $curr;
+            };
+            $curr = Audio::Directory->new(
+                name => $i->{directory}->native,
+                entries => [],
+                is_dir => 1,
+            );
+            $id = $i->{collection_id}
+        };
+        push @{ $curr->entries }, Audio::Directory->new({
+            name => $i->{filename}->native,
+            is_dir => 0,
+        });
+
+    };
+    push @res, $curr if $curr; # we have an edge case, when there is only a single collection
+    return \@res
+}
+
+sub fetch_album( $artist, $name ) {
+    say "Fetching from DB";
+    my $filename;
+    $filename = "%/$artist/$name%";
+
+    my $entries = $filesystem->selectall_named( <<'SQL', $filename );
+        select e.mountpoint
+             , e.filename
+             , ce.filename as directory
+             , c.collection_id
+             , 0+m.position as position
+             , e.entry_json
+          FROM filesystem_membership m
+          join filesystem_collection c on m.collection_id=c.collection_id
+          join filesystem_entry ce on c.parent_id = ce.entry_id
+          join filesystem_entry e on m.entry_id=e.entry_id
+         where e.mime_type like 'audio/%'
+           and c.collection_type = 'directory'
+           and e.filename like $filename
+           and e.filename like '%.mp3'
+      order by 0+m.position asc
+SQL
+
+    # Now, regroup things into a "hierarchy" again:
+    my @res;
+    my $curr;
+    my $id = 0;
+    say "Fetching FS entries";
+
+    # Force a sort until we properly fill in the playlist positions...
+    # or automatically suggest a good sort order for directories
+    $entries->@* = sort {
+        my $pos_a = $a->{position} // [$a->{filename} =~ / - (\d{2}) -/]->[0];
+        my $pos_b = $b->{position} // [$b->{filename} =~ / - (\d{2}) -/]->[0];
+        $pos_a <=> $pos_b
+    } $entries->@*;
+    use Data::Dumper; say Dumper $entries;
+    for my $i (@$entries) {
+        $i->{filename} = $filesystem->_inflate_filename( $i->{mountpoint}, $i->{filename});
+        $i->{directory} = $filesystem->_inflate_filename( $i->{mountpoint}, $i->{directory});
+        if( $id != $i->{collection_id}) {
+            if( $curr ) {
+                push @res, $curr;
+            };
+            $curr = Audio::Directory->new(
+                name => $i->{directory}->native,
+                entries => [],
+                is_dir => 1,
+            );
+            $id = $i->{collection_id}
+        };
+        push @{ $curr->entries }, Audio::Directory->new({
+            name => $i->{filename}->native,
+            is_dir => 0,
+        });
+
+    };
+    push @res, $curr if $curr; # we have an edge case, when there is only a single collection
+    return \@res
+}
+
+my $base = '/var/run/user/1000/gvfs/smb-share:server=dune,share=media/mp3/';
+get '/media' => sub( $c ) {
+    my $albums = get_recent(20, 0);
+    $c->stash( albums => $albums );
+    $c->stash( base   => $base );
+    $c->render('media')
+};
+
+get '/media/playlist/*artist/*album' => sub( $c ) {
+    $c->stash( title => $c->param('album') );
+    $c->stash( artist => $c->param('artist') );
+
+    # Find album ...
+    my $album = fetch_album( $c->param('artist'), $c->param('album') )->[0];
+
+    $c->stash( base   => $base );
+    $c->stash( tracks => $album );
+    $c->render('playlist')
+};
+
+get '/media/image/*image' => sub( $c ) {
+    my $filename = $c->param('image');
+    $filename =~ s![\\/]\.\.(?=[\\/])!/!g;
+    my $fn = Mojo::File->new( $base, $filename );
+    say "Sending [$fn]";
+    $c->reply->asset(Mojo::Asset::File->new(path => $fn));
+};
+
+get '/media/asset/*asset' => sub( $c ) {
+    my $filename = $c->param('asset');
+    $filename =~ s![\\/]\.\.(?=[\\/])!/!g;
+    $filename =~ s/&amp;/&/g;
+    my $fn = Mojo::File->new( $base, $filename );
+    say "Sending [$fn]";
+    $c->reply->asset(Mojo::Asset::File->new(path => $fn));
+    if( $fn =~ /\.m3u8\z/ ) {
+        $c->res->headers->content_type('application/x-mpegurl');
+    };
+};
+
+app->start;

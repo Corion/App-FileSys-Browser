@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta htmx.config.allowScriptTags="true">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="bootstrap.5.3.3.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+<title>HTMX playground</title>
+<link rel="stylesheet" src="./boostrap.5.3.3.min.css" />
+<script src="htmx.2.0.1.min.js"></script>
+<script src="ws.2.0.1.js"></script>
+<script src="debug.2.0.1.js"></script>
+<script src="loading-states.2.0.1.js"></script>
+<script src="idiomorph-ext.0.3.0.js"></script>
+
+<style>
+.my-container {
+  display: flex;
+  flex-flow: column;
+  align-items: stretch;
+  height: 100vh;
+}
+
+.ui-main {
+  flex: 1;
+  overflow: auto;
+
+  display: flex;
+  flex-flow: row; /* We have a horizontal layout here */
+  align-items: stretch;
+}
+
+.ui-main-left {
+  width: 50%;
+  overflow: auto;
+  /* background: #ccc; */
+  resize: horizontal;
+    display: flex;
+}
+
+.ui-main-right {
+  width: 50%;
+  overflow: auto;
+  /* background: #bbb; */
+  flex: 1; /* grow automatically to fill the rest */
+  min-width: 0px;
+}
+
+.ui-vertical {
+    display: flex;
+    flex-flow: column;
+    flex: 1;
+};
+
+.ui-bottom {
+  min-height: 32px;
+  padding: 0px;
+  margin: 0px;
+}
+
+.ui-resizer-horizontal {
+  cursor: col-resize;
+  user-select: none;
+  width: 8px;
+  flex: none;
+  background: #f00;
+}
+</style>
+</head>
+<body>
+    <div id="container" class="my-container">
+        <div id="main_content" class="ui-main">
+            <!--<div id="row" class="ui-main-left"> -->
+            <div id="ui-main-left" class="ui-main-left" style="overflow: auto;">
+                <div class="ui-vertical">
+                    <div class="ui-top" style="flex-grow: 1">
+                    left frame<br />
+                    </div>
+                    <div class="ui-bottom">
+                            <button style="position: absolute; right: -10px;">Lower right</button>
+                    </div>
+                </div>
+            </div>
+            <div id="ui-resizer-1" class="ui-resizer-horizontal"></div>
+            <div id="ui-main-right" class="ui-main-right" >
+            right frame
+            </div>
+        </div>
+        <div class="ui-bottom">
+%= include 'tabs';
+        </div>
+    </div>
+</body>
+</html>

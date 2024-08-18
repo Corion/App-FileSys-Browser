@@ -1,0 +1,2 @@
+<div id="preview" class="transition-all ease-in-out duration-600" data-loading-class="loading-in-progress"><%== $preview %>
+</div>
