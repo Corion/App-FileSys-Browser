@@ -22,16 +22,22 @@
 
 </head>
 <body
-  hx-boost="true"
+  hx-boost="false"
    hx-select="#mymain"
    hx-target="#mymain"
    hx-swap="outerHTML"
 >
   <div id="container" hx-history-elt>
 
-% for my $album ($albums->[0]) {
-      <div class="album-title"><%= $album->name %></div>
-      <a href="/media/playlist/<%= Mojo::File->new( $album->name )->to_rel($base) %>" class="album-link"><%= $album->name %></a>
+% for my $album ($albums->@*) {
+      <div class="album">
+      <!-- <div class="album-title"><%= $album->name %></div> -->
+      <a href="/media/playlist/<%= Mojo::File->new( $album->name )->to_rel($base) %>" class="album-link">
+%     if( my $art = $album->album_art ) {
+      <img src="/media/asset/<%= Mojo::File->new( $art->name )->to_rel($base) %>" />
+%     }
+      <%= $album->name %>
+      </a>
       <!-- play link to playlist -->
     </div>
 % }

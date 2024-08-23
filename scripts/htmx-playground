@@ -19,6 +19,8 @@ use lib '../Filesys-Scanner/lib';
 use Filesys::DB;
 use Audio::Directory;
 use DBD::SQLite::Constants ':file_open';
+use PerlX::Maybe;
+use Carp 'croak';
 
 #use MojoX::ChangeNotify;
 package MojoX::ChangeNotify {
@@ -435,10 +437,35 @@ SQL
     return \@res
 }
 
+sub collection_members( $filesystem, %options ) {
+    my $collection_id = delete $options{ collection_id }
+        or croak "Need a collection id";
+    my $type = delete $options{ type };
+    $type =~ s!\*!%!g;
+    my $entries = $filesystem->selectall_named( <<'SQL', $type, $collection_id );
+        select
+               e.entry_json
+             , c.collection_id
+             , 0+m.position as position
+          FROM filesystem_membership m
+          join filesystem_collection c on m.collection_id=c.collection_id
+          join filesystem_entry e on m.entry_id=e.entry_id
+         where e.mime_type like $type
+           and c.collection_id = $collection_id
+      order by 0+m.position asc
+SQL
+
+    for ($entries->@*) {
+        $_ = $filesystem->_inflate_entry( $_ );
+    }
+    $entries
+}
+
 sub fetch_album( $artist, $name ) {
-    say "Fetching from DB";
     my $filename;
     $filename = "%/$artist/$name%";
+
+    # Instead, fetch the collection id and then use collection_members
 
     my $entries = $filesystem->selectall_named( <<'SQL', $filename );
         select e.mountpoint
@@ -462,7 +489,6 @@ SQL
     my @res;
     my $curr;
     my $id = 0;
-    say "Fetching FS entries";
 
     # Force a sort until we properly fill in the playlist positions...
     # or automatically suggest a good sort order for directories
@@ -471,7 +497,7 @@ SQL
         my $pos_b = $b->{position} // [$b->{filename} =~ / - (\d{2}) -/]->[0];
         $pos_a <=> $pos_b
     } $entries->@*;
-    use Data::Dumper; say Dumper $entries;
+    #use Data::Dumper; say Dumper $entries;
     for my $i (@$entries) {
         $i->{filename} = $filesystem->_inflate_filename( $i->{mountpoint}, $i->{filename});
         $i->{directory} = $filesystem->_inflate_filename( $i->{mountpoint}, $i->{directory});
@@ -479,13 +505,26 @@ SQL
             if( $curr ) {
                 push @res, $curr;
             };
+
             $curr = Audio::Directory->new(
-                name => $i->{directory}->native,
-                entries => [],
-                is_dir => 1,
+                      name => $i->{directory}->native,
+                      entries => [],
+                      is_dir => 1,
             );
-            $id = $i->{collection_id}
+            $id = $i->{collection_id};
+            (my $album_art) = collection_members( $filesystem, type => 'image/*', collection_id => $id )->@*;
+            if( $album_art ) {
+                my $art = Audio::Directory->new(
+                          name => $album_art->{filename}->native,
+                          entries => [],
+                          is_dir => 0,
+                );
+                push $curr->entries->@*, $art;
+            }
+
+
         };
+
         push @{ $curr->entries }, Audio::Directory->new({
             name => $i->{filename}->native,
             is_dir => 0,
@@ -510,7 +549,6 @@ get '/media/playlist/*artist/*album' => sub( $c ) {
 
     # Find album ...
     my $album = fetch_album( $c->param('artist'), $c->param('album') )->[0];
-
     $c->stash( base   => $base );
     $c->stash( tracks => $album );
     $c->render('playlist')
