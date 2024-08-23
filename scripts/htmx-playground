@@ -465,6 +465,8 @@ sub fetch_album( $artist, $name ) {
     my $filename;
     $filename = "%/$artist/$name%";
 
+    # Find the album by title/artist instead of hardcoding a filename
+
     # Instead, fetch the collection id and then use collection_members
 
     my $entries = $filesystem->selectall_named( <<'SQL', $filename );
