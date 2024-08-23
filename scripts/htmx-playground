@@ -554,6 +554,21 @@ get '/media/playlist/*artist/*album' => sub( $c ) {
     $c->render('playlist')
 };
 
+get '/media/playlist/*album' => sub( $c ) {
+    my ($artist, $album) = split / - /, $c->param('album');
+    say "$artist / $album";
+    $c->stash( title => $album );
+    $c->stash( artist => $artist );
+
+    # Find album ...
+    my $tracks = fetch_album( $artist, $album )->[0];
+    croak "No such album: $artist / $album"
+        unless $tracks;
+    $c->stash( base   => $base );
+    $c->stash( tracks => $tracks );
+    $c->render('playlist')
+};
+
 get '/media/image/*image' => sub( $c ) {
     my $filename = $c->param('image');
     $filename =~ s![\\/]\.\.(?=[\\/])!/!g;
