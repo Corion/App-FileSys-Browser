@@ -18,6 +18,15 @@
 
 <style>
   /* CSS grid thing, I guess */
+#container {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  grid-template-rows: auto auto;
+}
+
+.album {
+  display: grid;
+}
 </style>
 
 </head>
@@ -36,11 +45,12 @@
 %     if( my $art = $album->album_art ) {
       <img src="/media/asset/<%= Mojo::File->new( $art->name )->to_rel($base) %>" />
 %     }
-      <%= $album->name %>
+      <%= Mojo::File->new( $album->name )->basename %>
       </a>
       <!-- play link to playlist -->
     </div>
 % }
+  </div>
   <div id="player">
   <video
     id="my-player"
