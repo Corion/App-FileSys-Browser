@@ -21,12 +21,13 @@
 
 <!-- how will we handle appending to the current playlist?! -->
 <!-- tracklist: for album, songqueue: for playback -->
-<script>
-var tracklist;
-var songqueue;
-</script>
 
 <script>
+var playerSetup = false;
+var playerPlaying = false;
+var tracklist;
+var songqueue;
+
 function fetchTracklist() {
     const url = window.location.href + ".json";
     const req = new Request(url);
@@ -36,9 +37,10 @@ function fetchTracklist() {
             tracklist = body.slice(0);
 
             // If the player is idle, set it up with the new playlist
-            const player = videojs('my-player');
-            console.log(player);
-            if( player.ended ) {
+            console.log('Player is playing/at a track?!', playerPlaying);
+            if( !playerPlaying ) {
+                const player = videojs('my-player');
+                console.log("Kicking of track?!");
                 player.playlist( tracklist );
             };
           });
@@ -47,42 +49,51 @@ function fetchTracklist() {
 }
 
 function initPlayer() {
-  return;
   const player = videojs('my-player');
-  player.ready( () => {
-        // Well, we don't want to necessarily change the playlist here!
-        // player.playlist( tracklist );
+  if(! playerSetup) {
+      playerSetup = true;
+      player.ready( () => {
+        console.log("Connecting events");
+            // Well, we don't want to necessarily change the playlist here!
+            // player.playlist( tracklist );
 
-        // Update our display
-        player.on("playlistitem", (i) => {
-          const track = player.playlist.currentIndex();
+            // Update our display
+            player.on("playlistitem", (i) => {
+              const track = player.playlist.currentIndex();
 
-          // This is only for songs that are on the current page ...
-          // Remove the "track-playing" class from all tracks
-          const tracks = document.querySelectorAll(".track-playing");
-          for (let elt of tracks) {
-              elt.classList.remove("track-playing");
-          };
+              // This is only for songs that are on the current page ...
+              // Remove the "track-playing" class from all tracks
+              const tracks = document.querySelectorAll(".track-playing");
+              for (let elt of tracks) {
+                  elt.classList.remove("track-playing");
+              };
 
-          const el = document.getElementById("track-"+track);
-          if( el ) {
-            el.classList.add("track-playing");
-          };
-        });
+              const el = document.getElementById("track-"+track);
+              if( el ) {
+                el.classList.add("track-playing");
+              };
+            });
 
-        // Our own implementation of autoadvance, since the one videojs has
-        // in the playlist plugin does not seem to work?!
-        player.on("ended", (e) => {
-          if( player.playlist.nextIndex() >= 1 ) {
-            player.playlist.next();
-          };
-        });
-    });
+            // Our own implementation of autoadvance, since the one videojs has
+            // in the playlist plugin does not seem to work?!
+            player.on("ended", (e) => {
+              console.log('ended', playerPlaying);
+              playerPlaying = false;
+              if( player.playlist.nextIndex() >= 1 ) {
+                player.playlist.next();
+              };
+            });
+            player.on(["playing",'play'], (e) => {
+              console.log('playing', playerPlaying);
+              playerPlaying = true;
+            });
+      });
+  };
 }
 
 function playTrack(track) {
   const player = videojs('my-player');
-
+console.log("Playing track",track);
   // Replace the current playlist with the new album
   songqueue = tracklist.slice(0);
   player.playlist(songqueue);
@@ -93,9 +104,15 @@ function playTrack(track) {
   });
 }
 
+function init() {
+  console.log("Initializing");
+    initPlayer();
+    fetchTracklist();
+};
+
 /* This now gets called on _every_ page change ... */
 htmx.onLoad( (elt) => {
-    fetchTracklist();
+  init();
 });
 </script>
 
@@ -105,7 +122,7 @@ htmx.onLoad( (elt) => {
    hx-select="#container"
    hx-target="#container"
    hx-swap="outerHTML"
-  onload="fetchTracklist();"
+   onload="javascript:init()"
 >
   <div id="container" hx-history-elt>
 
