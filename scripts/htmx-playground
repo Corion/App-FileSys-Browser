@@ -539,7 +539,6 @@ SQL
 
 sub as_videojs_playlist($directory, $base) {
     my $art = $directory->album_art;
-    use Data::Dumper; warn Dumper $directory;
     return [
         map {
             my $track = $_;
