@@ -1,0 +1,13 @@
+  /* CSS grid thing, I guess */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 400px);
+  grid-template-rows: masonry;
+}
+
+.album {
+  display: grid;
+}
+
+.track-playing { font-weight: bold; }
+.track-play { cursor: pointer; }

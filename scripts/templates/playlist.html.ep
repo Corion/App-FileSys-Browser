@@ -17,11 +17,7 @@
 <script src="/videojs-playlist.5.1.2.min.js"></script>
 <link rel="stylesheet" href="/video-js.8.17.2.css" />
 
-<style>
-.track-playing { font-weight: bold; }
-.track-play { cursor: pointer; }
-
-</style>
+<link href="/mediaplayer.css" rel="stylesheet" crossorigin="anonymous">
 
 <script>
 const playlist = [
