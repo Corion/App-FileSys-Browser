@@ -19,33 +19,45 @@
 
 <link href="/mediaplayer.css" rel="stylesheet" crossorigin="anonymous">
 
+<!-- how will we handle appending to the current playlist?! -->
+<!-- tracklist: for album, songqueue: for playback -->
 <script>
-const playlist = [
-% my $art = $tracks->album_art;
-% for my $track ($tracks->music_files ) {
-  { sources: [{ type: "audio/mpeg"
-    , src: "/media/asset/<%== Mojo::File->new( $track->{ name })->to_rel($base) %>"
-    }]
-    % if( $art ) {
-    , poster:"/media/image/<%== Mojo::File->new( $art->name )->to_rel( $base ) %>"
-    % }
- },
-% }
-];
+var tracklist;
+var songqueue;
 </script>
 
 <script>
-var player;
-function initPlayer() {
-  player = videojs('my-player');
-  player.ready( () => {
+function fetchTracklist() {
+    const url = window.location.href + ".json";
+    const req = new Request(url);
+    window.fetch(req)
+    .then( (res) => {
+          res.json().then( (body) => {
+            tracklist = body.slice(0);
 
-        player.playlist( playlist );
+            // If the player is idle, set it up with the new playlist
+            const player = videojs('my-player');
+            console.log(player);
+            if( player.ended ) {
+                player.playlist( tracklist );
+            };
+          });
+    });
+
+}
+
+function initPlayer() {
+  return;
+  const player = videojs('my-player');
+  player.ready( () => {
+        // Well, we don't want to necessarily change the playlist here!
+        // player.playlist( tracklist );
 
         // Update our display
         player.on("playlistitem", (i) => {
           const track = player.playlist.currentIndex();
 
+          // This is only for songs that are on the current page ...
           // Remove the "track-playing" class from all tracks
           const tracks = document.querySelectorAll(".track-playing");
           for (let elt of tracks) {
@@ -69,12 +81,22 @@ function initPlayer() {
 }
 
 function playTrack(track) {
-  let item = playlist[track];
+  const player = videojs('my-player');
+
+  // Replace the current playlist with the new album
+  songqueue = tracklist.slice(0);
+  player.playlist(songqueue);
+  let item = songqueue[track];
   player.playlist.currentItem(track);
   player.ready( () => {
       player.play();
   });
 }
+
+/* This now gets called on _every_ page change ... */
+htmx.onLoad( (elt) => {
+    fetchTracklist();
+});
 </script>
 
 </head>
@@ -83,7 +105,7 @@ function playTrack(track) {
    hx-select="#container"
    hx-target="#container"
    hx-swap="outerHTML"
-   onload="initPlayer();"
+  onload="fetchTracklist();"
 >
   <div id="container" hx-history-elt>
 
