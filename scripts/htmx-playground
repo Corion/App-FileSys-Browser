@@ -537,12 +537,51 @@ SQL
     return \@res
 }
 
+sub as_videojs_playlist($directory, $base) {
+    my $art = $directory->album_art;
+    use Data::Dumper; warn Dumper $directory;
+    return [
+        map {
+            my $track = $_;
+            +{
+            sources => [
+                    +{
+                        type => 'audio/mpeg',
+                      , src => "/media/asset/" . Mojo::File->new( $track->{ name })->to_rel($base)
+                    }
+            ],
+            ($art ? (poster => "/media/image/". Mojo::File->new( $art->name )->to_rel( $base )) : ())
+            },
+        } $directory->music_files
+    ];
+}
+
 my $base = '/var/run/user/1000/gvfs/smb-share:server=dune,share=media/mp3/';
 get '/media' => sub( $c ) {
     my $albums = get_recent(20, 0);
     $c->stash( albums => $albums );
     $c->stash( base   => $base );
     $c->render('media')
+};
+
+get '/media/playlist/*artist/<*album>.json' => sub( $c ) {
+    $c->stash( title => $c->param('album') );
+    $c->stash( artist => $c->param('artist') );
+
+    # Find album ...
+    my $album = fetch_album( $c->param('artist'), $c->param('album') )->[0];
+    $c->render(json => as_videojs_playlist( $album, $base ))
+};
+
+get '/media/playlist/<*album>.json' => sub( $c ) {
+    my ($artist, $album) = split / - /, $c->param('album');
+    say "$artist / $album";
+
+    # Find album ...
+    my $tracks = fetch_album( $artist, $album )->[0];
+    croak "No such album: $artist / $album"
+        unless $tracks;
+    $c->render(json => as_videojs_playlist( $tracks, $base ))
 };
 
 get '/media/playlist/*artist/*album' => sub( $c ) {
