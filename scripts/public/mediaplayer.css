@@ -5,6 +5,15 @@
   grid-template-rows: masonry;
 }
 
+.grid-tracks {
+  display: grid;
+  grid-template-columns: auto auto ;
+  grid-template-rows: 1fr;
+}
+#cover { display: grid; }
+#tracklist { display: grid; }
+
+
 .album {
   display: grid;
 }
