@@ -77,15 +77,31 @@ function initPlayer() {
             // Our own implementation of autoadvance, since the one videojs has
             // in the playlist plugin does not seem to work?!
             player.on("ended", (e) => {
-              console.log('ended', playerPlaying);
               playerPlaying = false;
               if( player.playlist.nextIndex() >= 1 ) {
                 player.playlist.next();
               };
             });
             player.on(["playing",'play'], (e) => {
-              console.log('playing', playerPlaying);
               playerPlaying = true;
+
+              if ("mediaSession" in navigator) {
+                let item = songqueue[  player.playlist.currentItem()];
+
+                navigator.mediaSession.metadata = new MediaMetadata({
+                  title: "Unforgettable",
+                  artist: "Nat King Cole",
+                  album: "The Ultimate Collection (Remastered)",
+                  artwork: [
+                    {
+                      src: item.poster,
+                      sizes: "400x400",
+                      type: "image/jpeg",
+                    },
+                  ],
+                });
+              };
+
             });
       });
   };
