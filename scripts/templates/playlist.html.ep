@@ -119,7 +119,7 @@ htmx.onLoad( (elt) => {
       </div>
 % }
   </div>
-  <a href="http://localhost:3001/media">List</a>
+  <a href="/media">List</a>
   <div id="player" hx-preserve="true">
   <video
     hx-preserve="true"
