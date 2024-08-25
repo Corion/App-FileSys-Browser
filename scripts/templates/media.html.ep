@@ -16,51 +16,42 @@
 <script src="/video.8.17.2.min.js"></script>
 <link rel="stylesheet" href="./video-js.8.17.2.css" />
 
-<style>
-  /* CSS grid thing, I guess */
-#container {
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  grid-template-rows: auto auto;
-}
-
-.album {
-  display: grid;
-}
-</style>
+<link href="/mediaplayer.css" rel="stylesheet" crossorigin="anonymous">
 
 </head>
 <body
-  hx-boost="false"
-   hx-select="#mymain"
-   hx-target="#mymain"
-   hx-swap="outerHTML"
+  hx-boost="true"
+   hx-select="#container"
+   hx-target="#container"
+   -hx-swap="outerHTML"
 >
-  <div id="container" hx-history-elt>
+  <div id="container" class="grid-container" hx-history-elt>
 
 % for my $album ($albums->@*) {
+%     my $art = $album->album_art;
       <div class="album">
       <!-- <div class="album-title"><%= $album->name %></div> -->
       <a href="/media/playlist/<%= Mojo::File->new( $album->name )->to_rel($base) %>" class="album-link">
-%     if( my $art = $album->album_art ) {
+%     if( $art ) {
       <img src="/media/asset/<%= Mojo::File->new( $art->name )->to_rel($base) %>" />
 %     }
-      <%= Mojo::File->new( $album->name )->basename %>
+%#      <%= Mojo::File->new( $album->name )->basename %>
       </a>
       <!-- play link to playlist -->
     </div>
 % }
   </div>
-  <div id="player">
+  <div id="player" hx-preserve="true">
   <video
+    hx-preserve="true"
     id="my-player"
     class="video-js"
     controls
     preload="auto"
-%#    poster="/media/image/<%= Mojo::File->new( $album->album_art->name )->to_rel( $base ) %>"
-%#    src="/media/asset/<%= Mojo::File->new( $album->playlist->name )->to_rel( $base ) %>"
-    type="application/x-mpegurl"
-    data-setup='{}'>
+    autoplay="true"
+    type="audio/mpeg"
+    data-setup='{"audioPosterMode":true}'
+    >
   <p class="vjs-no-js">
     To view this video please enable JavaScript
   </p>

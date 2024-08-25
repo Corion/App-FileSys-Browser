@@ -84,8 +84,8 @@ function playTrack(track) {
 </head>
 <body
   hx-boost="true"
-   hx-select="#mymain"
-   hx-target="#mymain"
+   hx-select="#container"
+   hx-target="#container"
    hx-swap="outerHTML"
    onload="initPlayer();"
 >
@@ -100,8 +100,11 @@ function playTrack(track) {
         </div>
       </div>
 % }
-  <div id="player">
+  </div>
+  <a href="http://localhost:3001/media">List</a>
+  <div id="player" hx-preserve="true">
   <video
+    hx-preserve="true"
     id="my-player"
     class="video-js"
     controls
