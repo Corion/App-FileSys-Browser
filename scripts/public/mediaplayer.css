@@ -13,6 +13,11 @@
 #cover { display: grid; }
 #tracklist { display: grid; }
 
+#player {
+    position: fixed;
+    bottom: 0px;
+    right: 0px;
+}
 
 .album {
   display: grid;
