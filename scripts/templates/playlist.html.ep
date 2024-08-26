@@ -175,5 +175,7 @@ htmx.onLoad( (elt) => {
   </p>
   </video>
   </div>
+  <div id="playqueue" hx-preserve="true">
+  </div>
 </body>
 </html>
