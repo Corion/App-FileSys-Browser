@@ -140,17 +140,18 @@ htmx.onLoad( (elt) => {
    hx-swap="outerHTML"
    onload="javascript:init()"
 >
+% use Encode 'decode';
 % my $art = $tracks->album_art;
   <div id="container" hx-history-elt>
     <nav><a href="/media">List</a></nav>
     <div class="grid-tracks">
-        <img id="cover" src="/media/image/<%= Mojo::File->new( $art->name )->to_rel( $base ) %>" />
+        <img id="cover" src="/media/image/<%= Mojo::File->new( decode( 'UTF-8', $art->name ))->to_rel( $base ) %>" />
         <div id="tracklist">
         % my $i = 0;
         % for my $track ($tracks->music_files) {
               <div class="track-play" id="track-<%= 0+$i %>" hx-on:click="playTrack(<%= $i++ %>);">
                 <div class="track-title">
-                  <%= Mojo::File->new( $track->name )->basename %>
+                  <%= Mojo::File->new( decode( 'UTF-8', $track->name ) )->basename %>
                 </div>
               </div>
         % }
@@ -167,7 +168,7 @@ htmx.onLoad( (elt) => {
     autoplay="true"
     type="audio/mpeg"
     % if( $art ) {
-    data-setup='{"audioPosterMode":true, "poster":"/media/image/<%= Mojo::File->new( $art->name )->to_rel( $base ) %>"}'
+    data-setup='{"audioPosterMode":true, "poster":"/media/image/<%= Mojo::File->new( decode( 'UTF-8', $art->name ) )->to_rel( $base ) %>"}'
     % }
     >
   <p class="vjs-no-js">
