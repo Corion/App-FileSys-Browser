@@ -23,6 +23,7 @@
 <!-- tracklist: for album, songqueue: for playback -->
 
 <script>
+  "use strict";
 var playerSetup = false;
 var playerPlaying = false;
 var tracklist;
@@ -86,6 +87,7 @@ function initPlayer() {
               playerPlaying = true;
 
               if ("mediaSession" in navigator) {
+                console.log(songqueue);
                 let item = songqueue[  player.playlist.currentItem()];
 
                 navigator.mediaSession.metadata = new MediaMetadata({
@@ -109,9 +111,22 @@ function initPlayer() {
 
 function playTrack(track) {
   const player = videojs('my-player');
-console.log("Playing track",track);
+  console.log("Playing track",track);
   // Replace the current playlist with the new album
   songqueue = tracklist.slice(0);
+  console.log("Songqueue",songqueue);
+
+  // update the HTML of #playqueue with the new songqueue
+  const playqueue = document.getElementById("playqueue");
+  const newSongqueue = [];
+  for ( let track of songqueue ) {
+      let div = document.createElement("div");
+      div.textContent = track.sources[0].src;
+      newSongqueue.push( div );
+  }
+
+  playqueue.replaceChildren.apply( playqueue, newSongqueue); // boom
+
   player.playlist(songqueue);
   let item = songqueue[track];
   player.playlist.currentItem(track);
