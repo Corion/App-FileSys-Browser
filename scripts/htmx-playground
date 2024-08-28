@@ -494,12 +494,12 @@ SQL
 
     # Force a sort until we properly fill in the playlist positions...
     # or automatically suggest a good sort order for directories
+    # Create a class Filesys::DB::Collection::Playlist (or whatever)
     $entries->@* = sort {
-        my $pos_a = $a->{position} // [$a->{filename} =~ / - (\d{2}) -/]->[0];
-        my $pos_b = $b->{position} // [$b->{filename} =~ / - (\d{2}) -/]->[0];
+        my $pos_a = $a->{position} // $a->{content}->{track} // [$a->{filename} =~ / - (\d{2}) -/]->[0];
+        my $pos_b = $b->{position} // $b->{content}->{track} // [$b->{filename} =~ / - (\d{2}) -/]->[0];
         $pos_a <=> $pos_b
     } $entries->@*;
-    #use Data::Dumper; say Dumper $entries;
     for my $i (@$entries) {
         $i->{filename} = $filesystem->_inflate_filename( $i->{mountpoint}, $i->{filename});
         $i->{directory} = $filesystem->_inflate_filename( $i->{mountpoint}, $i->{directory});
