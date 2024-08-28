@@ -57,7 +57,7 @@
   </p>
   </video>
   </div>
-  <div id="playqueue" hx-preserve="true">
-  </div>
+  <summary id="playqueue" hx-preserve="true">
+  </summary>
 </body>
 </html>
