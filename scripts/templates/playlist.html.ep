@@ -148,7 +148,7 @@ htmx.onLoad( (elt) => {
 </script>
 
 </head>
-<body
+<body hx-ext="ws" ws-connect="/notify?version=<%= $$ %>"
   hx-boost="true"
    hx-select="#container"
    hx-target="#container"
@@ -156,17 +156,24 @@ htmx.onLoad( (elt) => {
    onload="javascript:init()"
 >
 % use Encode 'decode';
-% my $art = $tracks->album_art;
+% my $art = $tracks->image;
   <div id="container" hx-history-elt>
     <nav><a href="/media">List</a></nav>
     <div class="grid-tracks">
-        <img id="cover" src="/media/image/<%= Mojo::File->new( decode( 'UTF-8', $art->name ))->to_rel( $base ) %>" />
+% if( $art ) {
+        <img id="cover" src="/media/image/<%= Mojo::File->new( $art->filename->to_native )->to_rel( $base ) %>" />
+% }
         <div id="tracklist">
         % my $i = 0;
-        % for my $track ($tracks->music_files) {
+        % for my $track ($tracks->items->@*) {
+        %     next if $track->{entry_id} == $tracks->image;
+        %     next if $track->{mime_type} eq 'audio/x-mpegurl';
               <div class="track-play" id="track-<%= 0+$i %>" hx-on:click="playTrack(<%= $i++ %>);">
                 <div class="track-title">
-                  <%= Mojo::File->new( decode( 'UTF-8', $track->name ) )->basename %>
+% my $visual = defined $track->{content}->{title}
+%              ? decode('UTF-8', join " - ",  $track->{content}->{title}, $track->{content}->{artist})
+%              : Mojo::File->new( $track->{filename}->native )->basename;
+                  <%= $visual %>
                 </div>
               </div>
         % }
@@ -183,7 +190,7 @@ htmx.onLoad( (elt) => {
     autoplay="true"
     type="audio/mpeg"
     % if( $art ) {
-    data-setup='{"audioPosterMode":true, "poster":"/media/image/<%= Mojo::File->new( decode( 'UTF-8', $art->name ) )->to_rel( $base ) %>"}'
+    data-setup='{"audioPosterMode":true, "poster":"/media/image/<%= Mojo::File->new( decode( 'UTF-8', $art->{filename}->native ) )->to_rel( $base ) %>"}'
     % }
     >
   <p class="vjs-no-js">

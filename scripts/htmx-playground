@@ -17,10 +17,12 @@ use Mojo::File 'path';
 use lib '../Filesys-DB/lib';
 use lib '../Filesys-Scanner/lib';
 use Filesys::DB;
+use Filesys::DB::Collection;
 use Audio::Directory;
 use DBD::SQLite::Constants ':file_open';
 use PerlX::Maybe;
 use Carp 'croak';
+
 
 #use MojoX::ChangeNotify;
 package MojoX::ChangeNotify {
@@ -395,70 +397,16 @@ sub get_recent( $count=20, $offset=0) {
          limit 20
         offset 0
     )
-    select c.title
-         , c.collection_id
-         , ce.filename as directory
-         , e.filename as filename
-         , e.mountpoint as mountpoint
+    select distinct
+           c.collection_id
       from latest_changed_audio_directories c
-      join filesystem_membership m on m.collection_id = c.collection_id
-      join filesystem_entry e on m.entry_id = e.entry_id
-      join filesystem_entry ce on c.parent_id = ce.entry_id
-     where (e.mime_type like 'audio/%' or e.mime_type like 'image/%')
-    order by c.collection_id desc, mountpoint, filename
+    order by c.collection_id desc
 SQL
 
-    # Now, regroup things into a "hierarchy" again:
-    my @res;
-    my $curr;
-    my $id = 0;
-    say "Fetching FS entries";
-    for my $i (@$items) {
-        $i->{filename} = $filesystem->_inflate_filename( $i->{mountpoint}, $i->{filename});
-        $i->{directory} = $filesystem->_inflate_filename( $i->{mountpoint}, $i->{directory});
-        if( $id != $i->{collection_id}) {
-            if( $curr ) {
-                push @res, $curr;
-            };
-            $curr = Audio::Directory->new(
-                name => $i->{directory}->native,
-                entries => [],
-                is_dir => 1,
-            );
-            $id = $i->{collection_id}
-        };
-        push @{ $curr->entries }, Audio::Directory->new({
-            name => $i->{filename}->native,
-            is_dir => 0,
-        });
-
-    };
-    push @res, $curr if $curr; # we have an edge case, when there is only a single collection
+    my @res = map {
+        Filesys::DB::Collection->from_id( $filesystem, $_->{collection_id} );
+    } $items->@*;
     return \@res
-}
-
-sub collection_members( $filesystem, %options ) {
-    my $collection_id = delete $options{ collection_id }
-        or croak "Need a collection id";
-    my $type = delete $options{ type };
-    $type =~ s!\*!%!g;
-    my $entries = $filesystem->selectall_named( <<'SQL', $type, $collection_id );
-        select
-               e.entry_json
-             , c.collection_id
-             , 0+m.position as position
-          FROM filesystem_membership m
-          join filesystem_collection c on m.collection_id=c.collection_id
-          join filesystem_entry e on m.entry_id=e.entry_id
-         where e.mime_type like $type
-           and c.collection_id = $collection_id
-      order by 0+m.position asc
-SQL
-
-    for ($entries->@*) {
-        $_ = $filesystem->_inflate_entry( $_ );
-    }
-    $entries
 }
 
 sub fetch_album( $artist, $name ) {
@@ -467,91 +415,62 @@ sub fetch_album( $artist, $name ) {
 
     # Find the album by title/artist instead of hardcoding a filename
 
-    # Instead, fetch the collection id and then use collection_members
-
-    my $entries = $filesystem->selectall_named( <<'SQL', $filename );
-        select e.mountpoint
-             , e.filename
-             , ce.filename as directory
-             , c.collection_id
-             , 0+m.position as position
-             , e.entry_json
+    # Fetch the collection id
+    my $album = $filesystem->selectall_named(<<'SQL', $filename );
+        select distinct
+               c.collection_id
           FROM filesystem_membership m
           join filesystem_collection c on m.collection_id=c.collection_id
-          join filesystem_entry ce on c.parent_id = ce.entry_id
           join filesystem_entry e on m.entry_id=e.entry_id
          where e.mime_type like 'audio/%'
            and c.collection_type = 'directory'
            and e.filename like $filename
            and e.filename like '%.mp3'
-      order by 0+m.position asc
 SQL
-
-    # Now, regroup things into a "hierarchy" again:
-    my @res;
-    my $curr;
-    my $id = 0;
-
-    # Force a sort until we properly fill in the playlist positions...
-    # or automatically suggest a good sort order for directories
-    # Create a class Filesys::DB::Collection::Playlist (or whatever)
-    $entries->@* = sort {
-        my $pos_a = $a->{position} // $a->{content}->{track} // [$a->{filename} =~ / - (\d{2}) -/]->[0];
-        my $pos_b = $b->{position} // $b->{content}->{track} // [$b->{filename} =~ / - (\d{2}) -/]->[0];
-        $pos_a <=> $pos_b
-    } $entries->@*;
-    for my $i (@$entries) {
-        $i->{filename} = $filesystem->_inflate_filename( $i->{mountpoint}, $i->{filename});
-        $i->{directory} = $filesystem->_inflate_filename( $i->{mountpoint}, $i->{directory});
-        if( $id != $i->{collection_id}) {
-            if( $curr ) {
-                push @res, $curr;
-            };
-
-            $curr = Audio::Directory->new(
-                      name => $i->{directory}->native,
-                      entries => [],
-                      is_dir => 1,
-            );
-            $id = $i->{collection_id};
-            (my $album_art) = collection_members( $filesystem, type => 'image/*', collection_id => $id )->@*;
-            if( $album_art ) {
-                my $art = Audio::Directory->new(
-                          name => $album_art->{filename}->native,
-                          entries => [],
-                          is_dir => 0,
-                );
-                push $curr->entries->@*, $art;
-            }
-
-
-        };
-
-        push @{ $curr->entries }, Audio::Directory->new({
-            name => $i->{filename}->native,
-            is_dir => 0,
-        });
-
-    };
-    push @res, $curr if $curr; # we have an edge case, when there is only a single collection
-    return \@res
+    return fetch_playlist( $album->[0]->{collection_id});
 }
 
-sub as_videojs_playlist($directory, $base) {
-    my $art = $directory->album_art;
+sub fetch_playlist( $id ) {
+    my $res = Filesys::DB::Collection->from_id( $filesystem, $id );
+
+    my $art_id = $res->image ? $res->image->{entry_id} : 0;
+    $res->items->@* = grep {
+                $_->{entry_id} != $art_id
+            and $_->{mime_type} ne 'audio/x-mpegurl'
+            and $_->{mime_type} ne 'image/jpeg'
+    } $res->items->@*;
+
+    $res
+}
+
+
+sub as_videojs_playlist($collection, $base) {
+    my $art = $collection->image;
+    use Data::Dumper; warn Dumper $art;
+    my @art = defined $art ?
+      ( poster => "/media/image/". Mojo::File->new( $art->{ filename }->native )->to_rel( $base ))
+    : ();
+    my $art_id = $art->{entry_id};
     return [
         map {
             my $track = $_;
+            use Data::Dumper; warn Dumper $track;
             +{
-            sources => [
-                    +{
-                        type => 'audio/mpeg',
-                      , src => "/media/asset/" . Mojo::File->new( $track->{ name })->to_rel($base)
-                    }
-            ],
-            ($art ? (poster => "/media/image/". Mojo::File->new( $art->name )->to_rel( $base )) : ())
+                title => $track->{content}->{title},
+                artist => $track->{content}->{artist},
+                sources => [
+                        +{
+                            type => 'audio/mpeg',
+                        , src => "/media/asset/" . Mojo::File->new( $track->{ filename }->native)->to_rel($base)
+                        }
+                ],
+                @art
             },
-        } $directory->music_files
+        } grep {
+                $_->{entry_id} != $art_id
+            and $_->{mime_type} ne 'audio/x-mpegurl'
+            and $_->{mime_type} ne 'image/jpeg'
+        } $collection->items->@*
     ];
 }
 
@@ -563,49 +482,17 @@ get '/media' => sub( $c ) {
     $c->render('media')
 };
 
-get '/media/playlist/*artist/<*album>.json' => sub( $c ) {
-    $c->stash( title => $c->param('album') );
-    $c->stash( artist => $c->param('artist') );
-
+get '/media/playlist/<id:num>.json' => sub( $c ) {
     # Find album ...
-    my $album = fetch_album( $c->param('artist'), $c->param('album') )->[0];
-    $c->render(json => as_videojs_playlist( $album, $base ))
-};
-
-get '/media/playlist/<*album>.json' => sub( $c ) {
-    my ($artist, $album) = split / - /, $c->param('album');
-    say "$artist / $album";
-
-    # Find album ...
-    my $tracks = fetch_album( $artist, $album )->[0];
-    croak "No such album: $artist / $album"
-        unless $tracks;
+    my $tracks = fetch_playlist( $c->param('id'));
     $c->render(json => as_videojs_playlist( $tracks, $base ))
 };
 
-get '/media/playlist/*artist/*album' => sub( $c ) {
-    $c->stash( title => $c->param('album') );
-    $c->stash( artist => $c->param('artist') );
-
+get '/media/playlist/<id:num>' => sub( $c ) {
     # Find album ...
-    my $album = fetch_album( $c->param('artist'), $c->param('album') )->[0];
+    my $album = fetch_playlist( $c->param('id'));
     $c->stash( base   => $base );
     $c->stash( tracks => $album );
-    $c->render('playlist')
-};
-
-get '/media/playlist/*album' => sub( $c ) {
-    my ($artist, $album) = split / - /, $c->param('album');
-    say "$artist / $album";
-    $c->stash( title => $album );
-    $c->stash( artist => $artist );
-
-    # Find album ...
-    my $tracks = fetch_album( $artist, $album )->[0];
-    croak "No such album: $artist / $album"
-        unless $tracks;
-    $c->stash( base   => $base );
-    $c->stash( tracks => $tracks );
     $c->render('playlist')
 };
 
