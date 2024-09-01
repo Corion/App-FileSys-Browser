@@ -393,15 +393,18 @@ sub get_recent( $count=20, $offset=0) {
          limit 20
         offset 0
     )
-    select distinct
-           c.collection_id
-      from latest_changed_audio_directories c
+    select distinct c.collection_id
+         , c.collection_json
+      from latest_changed_audio_directories latest
+      join filesystem_collection c on latest.collection_id = c.collection_id
     order by c.collection_id desc
 SQL
 
+    say "Inflating";
     my @res = map {
-        Filesys::DB::Collection->from_id( $filesystem, $_->{collection_id} );
+        Filesys::DB::Collection->from_row( $filesystem, $_ );
     } $items->@*;
+    say "Done";
     return \@res
 }
 
@@ -455,6 +458,7 @@ sub as_videojs_playlist($collection, $base) {
             +{
                 title => $track->{content}->{title},
                 artist => $track->{content}->{artist},
+                album  => $track->{content}->{album},
                 sources => [
                         +{
                             type => 'audio/mpeg',
