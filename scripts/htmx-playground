@@ -429,11 +429,14 @@ SQL
 sub fetch_playlist( $id ) {
     my $res = Filesys::DB::Collection->from_id( $filesystem, $id );
 
-    my $art_id = $res->image ? $res->image->{entry_id} : 0;
+    if( $res->image ) {
+        $res->{image} = $res->fetch_image( $filesystem );
+    }
+
+    my $art = $res->image;
     $res->items->@* = grep {
-                $_->{entry_id} != $art_id
+                $_->{entry_id} != $art->entry_id
             and $_->{mime_type} ne 'audio/x-mpegurl'
-            and $_->{mime_type} ne 'image/jpeg'
     } $res->items->@*;
 
     $res
