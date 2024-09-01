@@ -33,7 +33,7 @@
       <!-- <div class="album-title"><%= $album->title %></div> -->
       <a href="/media/playlist/<%= $album->collection_id %>" class="album-link">
 %     if( $art ) {
-      <img src="/media/asset/<%= Mojo::File->new( $art->filename->to_native )->to_rel($base) %>" />
+      <img src="/media/asset/<%= Mojo::File->new( $art->filename->native )->to_rel($base) %>" />
 %     } else {
       <div>(image missing) <%= $album->title // $album->collection_id %></div>
 %     }
