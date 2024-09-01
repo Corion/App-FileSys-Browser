@@ -85,6 +85,11 @@ function initPlayer() {
             });
             player.on(["playing",'play'], (e) => {
               playerPlaying = true;
+              if( ! songqueue) {
+                  // User clicked the "play" button of the player
+                  songqueue = tracklist.slice(0);
+                  updatePlayqueue();
+              }
 
               if ("mediaSession" in navigator) {
                 console.log(songqueue);
