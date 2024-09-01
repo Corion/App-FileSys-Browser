@@ -471,6 +471,11 @@ sub as_videojs_playlist($collection, $base) {
 my $base = '/var/run/user/1000/gvfs/smb-share:server=dune,share=media/mp3/';
 get '/media' => sub( $c ) {
     my $albums = get_recent(20, 0);
+    for my $album ($albums->@*) {
+        if( $album->image ) {
+            $album->{image} = $album->fetch_image( $filesystem );
+        }
+    };
     $c->stash( albums => $albums );
     $c->stash( base   => $base );
     $c->render('media')
