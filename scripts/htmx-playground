@@ -132,8 +132,6 @@ sub add_client( $client ) {
     });
 
     $client->on('json' => sub ($c, $msg) {
-        #use Data::Dumper;
-        #warn "Client message: " . Dumper $msg;
         if( $client_version != $app_version ) {
             say "Client needs reload, trying to force a reload";
             # We should note when we have upgraded the client
@@ -309,8 +307,6 @@ get '/ui' => 'ui';
 
 sub parse_tags( $params, $newtag ) {
     my @tags;
-    #use Data::Dumper;
-    #say Dumper $params->pairs;
 
     for my $tag ($params->names->@*) {
         if( $tag =~ /tag_(\w+)\z/ ) {
@@ -446,7 +442,6 @@ sub fetch_playlist( $id ) {
 
 sub as_videojs_playlist($collection, $base) {
     my $art = $collection->image;
-    use Data::Dumper; warn Dumper $art;
     my @art = defined $art ?
       ( poster => "/media/image/". Mojo::File->new( $art->{ filename }->native )->to_rel( $base ))
     : ();
@@ -454,7 +449,6 @@ sub as_videojs_playlist($collection, $base) {
     return [
         map {
             my $track = $_;
-            use Data::Dumper; warn Dumper $track;
             +{
                 title => $track->{content}->{title},
                 artist => $track->{content}->{artist},
