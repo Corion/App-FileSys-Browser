@@ -85,6 +85,9 @@ function initPlayer() {
             });
             player.on(["playing",'play'], (e) => {
               playerPlaying = true;
+              //console.log(e);
+              //const player = videojs(e.target);
+
               if( ! songqueue) {
                   // User clicked the "play" button of the player
                   songqueue = tracklist.slice(0);
@@ -92,13 +95,13 @@ function initPlayer() {
               }
 
               if ("mediaSession" in navigator) {
-                console.log(songqueue);
+                // Somehow, player.playlist.currentItem() seems to get lost ?!
+                console.log( "Current item", player.playlist.currentItem());
+                console.log("Songqueue",songqueue);
                 let item = songqueue[  player.playlist.currentItem()];
-
                 navigator.mediaSession.metadata = new MediaMetadata({
-                  title: "Unforgettable",
-                  artist: "Nat King Cole",
-                  album: "The Ultimate Collection (Remastered)",
+                  album: item.album,
+                  artist: item.artist,
                   artwork: [
                     {
                       src: item.poster,
@@ -106,6 +109,7 @@ function initPlayer() {
                       type: "image/jpeg",
                     },
                   ],
+                  title: item.title,
                 });
               };
 
@@ -114,12 +118,28 @@ function initPlayer() {
   };
 }
 
+let lastUrl;
 function playTrack(track) {
   const player = videojs('my-player');
   console.log("Playing track",track);
-  // Replace the current playlist with the new album
-  songqueue = tracklist.slice(0);
-  console.log("Songqueue",songqueue);
+
+  if( lastUrl != window.location.href ) {
+      lastUrl = window.location.href;
+      // Replace the current playlist with the current album
+      songqueue = tracklist.slice(0);
+
+      updatePlayqueue();
+      console.log("Resetting playlist");
+      player.playlist(songqueue);
+      console.log(songqueue);
+  };
+  player.playlist.currentItem(track);
+  player.ready( () => {
+      player.play();
+  });
+};
+
+function updatePlayqueue() {
 
   // update the HTML of #playqueue with the new songqueue
   const playqueue = document.getElementById("playqueue");
@@ -132,12 +152,6 @@ function playTrack(track) {
 
   playqueue.replaceChildren.apply( playqueue, newSongqueue); // boom
 
-  player.playlist(songqueue);
-  let item = songqueue[track];
-  player.playlist.currentItem(track);
-  player.ready( () => {
-      player.play();
-  });
 }
 
 function init() {
@@ -166,7 +180,7 @@ htmx.onLoad( (elt) => {
     <nav><a href="/media">List</a></nav>
     <div class="grid-tracks">
 % if( $art ) {
-        <img id="cover" src="/media/image/<%= Mojo::File->new( $art->filename->to_native )->to_rel( $base ) %>" />
+        <img id="cover" src="/media/image/<%= Mojo::File->new( $art->filename->native )->to_rel( $base ) %>" />
 % }
         <div id="tracklist">
         % my $i = 0;
