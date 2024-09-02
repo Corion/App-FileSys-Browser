@@ -43,17 +43,67 @@ function fetchTracklist() {
                 const player = videojs('my-player');
                 console.log("Kicking of track?!");
                 player.playlist( tracklist );
+                if( ! songqueue) {
+                    // User clicked the "play" button of the player
+                    songqueue = tracklist.slice(0);
+                    updatePlayqueue();
+                }
             };
           });
     });
 
 }
 
+function updateMediaSession(player) {
+    // Somehow, player.playlist.currentItem() seems to get lost ?!
+    console.log( "Current item", player.playlist.currentItem(), songqueue);
+    let item = songqueue[  player.playlist.currentItem()];
+    navigator.mediaSession.metadata = new MediaMetadata({
+      album: item.album,
+      artist: item.artist,
+      artwork: [
+        {
+          src: item.poster,
+          sizes: "400x400",
+          type: "image/jpeg",
+        },
+      ],
+      title: item.title,
+    });
+}
+
+function connectMediaSession(player, mediaSession) {
+    const SEEK_TIME = 10; // seconds
+    navigator.mediaSession.setActionHandler('seekbackward', (e) => {
+        player.currentTime(player.currentTime() - SEEK_TIME);
+    });
+    navigator.mediaSession.setActionHandler('seekforward', (e) => {
+        player.currentTime(player.currentTime() + SEEK_TIME);
+    });
+
+    navigator.mediaSession.setActionHandler('previoustrack', (e) => {
+      player.playlist.previous();
+    });
+    navigator.mediaSession.setActionHandler('nexttrack', (e) => {
+      player.playlist.next();
+    });
+
+    navigator.mediaSession.setActionHandler('play', (e) => {
+      player.play();
+    });
+    navigator.mediaSession.setActionHandler('pause', (e) => {
+      player.pause();
+    });
+    navigator.mediaSession.setActionHandler('stop', (e) => {
+      player.stop();
+    });
+}
+
 function initPlayer() {
-  const player = videojs('my-player');
-  if(! playerSetup) {
-      playerSetup = true;
-      player.ready( () => {
+    const player = videojs('my-player');
+    if(! playerSetup) {
+        playerSetup = true;
+        player.ready( () => {
         console.log("Connecting events");
             // Well, we don't want to necessarily change the playlist here!
             // player.playlist( tracklist );
@@ -94,26 +144,16 @@ function initPlayer() {
                   updatePlayqueue();
               }
 
-              if ("mediaSession" in navigator) {
-                // Somehow, player.playlist.currentItem() seems to get lost ?!
-                console.log( "Current item", player.playlist.currentItem());
-                console.log("Songqueue",songqueue);
-                let item = songqueue[  player.playlist.currentItem()];
-                navigator.mediaSession.metadata = new MediaMetadata({
-                  album: item.album,
-                  artist: item.artist,
-                  artwork: [
-                    {
-                      src: item.poster,
-                      sizes: "400x400",
-                      type: "image/jpeg",
-                    },
-                  ],
-                  title: item.title,
-                });
-              };
-
             });
+
+            // Consider hooking prev/next controls to the mediaSession item
+            // as well, so things work from a lockscreen
+            if ("mediaSession" in navigator) {
+                player.on('loadstart', () => {
+                    updateMediaSession(player);
+                });
+                connectMediaSession(player, navigator.mediaSession);
+            };
       });
   };
 }
@@ -151,7 +191,6 @@ function updatePlayqueue() {
   }
 
   playqueue.replaceChildren.apply( playqueue, newSongqueue); // boom
-
 }
 
 function init() {
