@@ -25,6 +25,7 @@
    hx-target="#container"
    -hx-swap="outerHTML"
 >
+    <a href="<%= url_for("/diagnostics") %>">Songs</a>
   <div id="container" class="grid-container" hx-history-elt>
 
 % for my $album ($albums->@*) {

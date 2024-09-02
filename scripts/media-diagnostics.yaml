@@ -1,0 +1,40 @@
+---
+documents:
+---
+title: Statistics
+sql: |
+    select 'Playlists', count(*) from filesystem_collection
+    union all
+    select 'Songs', count(*) from filesystem_entry
+---
+title: Collections without thumbnail/missing thumbnail file
+sql: |
+    with no_image as (
+       select c.collection_id
+         from filesystem_collection c
+         left join filesystem_entry e on c.image = e.entry_id
+        where c.image is null
+    )
+    , single_image as (
+       select c.collection_id as collection_id
+            , count(*) as images
+            , max(e.entry_id) as image
+         from no_image c
+         join filesystem_membership m on c.collection_id = m.collection_id
+         join filesystem_entry e on m.entry_id = e.entry_id
+        where e.mime_type like 'image/%'
+     group by c.collection_id
+       having images = 1
+    )
+    , debug as (
+      select c.collection_id
+           , c.title
+           , e.entry_id
+           , e.filename
+        from filesystem_collection c
+        join single_image si on si.collection_id = c.collection_id
+        join filesystem_entry e on e.entry_id = si.image
+    order by c.collection_id asc
+    )
+    select * from debug
+

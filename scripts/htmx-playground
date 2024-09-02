@@ -23,6 +23,8 @@ use DBD::SQLite::Constants ':file_open';
 use PerlX::Maybe;
 use Carp 'croak';
 
+use lib '../App-sqldisplay/lib';
+use App::sqldisplay;
 
 #use MojoX::ChangeNotify;
 package MojoX::ChangeNotify {
@@ -486,6 +488,18 @@ get '/media' => sub( $c ) {
     $c->stash( albums => $albums );
     $c->stash( base   => $base );
     $c->render('media')
+};
+
+get '/media/diagnostics' => sub( $c ) {
+    # rerun all queries
+    my $diagnostics = App::sqldisplay->new(
+        dbh         => $filesystem->dbh,
+        config_file => 'scripts/media-diagnostics.yaml',
+    );
+    $diagnostics->load_config();
+    my @results = $diagnostics->run_queries( $diagnostics->queries->@* );
+    $c->stash( results => \@results );
+    $c->render('diagnostics')
 };
 
 get '/media/playlist/<id:num>.json' => sub( $c ) {

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta htmx.config.allowScriptTags="true">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="/bootstrap.5.3.3.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+<!-- <link rel="stylesheet" src="./boostrap.5.3.3.min.css" /> -->
+<script src="/htmx.2.0.1.min.js"></script>
+<script src="/ws.2.0.1.js"></script>
+<script src="/debug.2.0.1.js"></script>
+<script src="/loading-states.2.0.1.js"></script>
+<script src="/idiomorph-ext.0.3.0.js"></script>
+
+<script src="/video.8.17.2.min.js"></script>
+<script src="/videojs-playlist.5.1.2.min.js"></script>
+<link rel="stylesheet" href="/video-js.8.17.2.css" />
+
+<link href="/mediaplayer.css" rel="stylesheet" crossorigin="anonymous">
+
+<!-- how will we handle appending to the current playlist?! -->
+<!-- tracklist: for album, songqueue: for playback -->
+
+<style>
+body { margin: 0px; }
+
+td.num { text-align: right };
+
+thead {
+    position: sticky;
+    top: 0;
+}
+
+</style>
+
+</head>
+<body>
+    <a href="<%= url_for("/media") %>">Songs</a>
+    <div id="container" class="my-container">
+        <div id="main_content" class="ui-main">
+            <!--<div id="row" class="ui-main-left"> -->
+% for my $res (@$results) {
+%= include 'query', res => $res;
+% }
+        </div>
+    </div>
+</body>
+</html>
