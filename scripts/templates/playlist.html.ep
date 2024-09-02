@@ -180,7 +180,7 @@ htmx.onLoad( (elt) => {
     <nav><a href="/media">List</a></nav>
     <div class="grid-tracks">
 % if( $art ) {
-        <img id="cover" src="/media/image/<%= Mojo::File->new( $art->filename->native )->to_rel( $base ) %>" />
+        <img id="cover" width="400px" height="400px" src="/media/image/<%= Mojo::File->new( $art->filename->native )->to_rel( $base ) %>" />
 % }
         <div id="tracklist">
         % my $i = 0;
