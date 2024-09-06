@@ -402,11 +402,11 @@ sub get_recent( $count=20, $offset=0) {
     order by c.collection_id desc
 SQL
 
-    say "Inflating";
+    #say "Inflating";
     my @res = map {
         Filesys::DB::Collection->from_row( $filesystem, $_ );
     } $items->@*;
-    say "Done";
+    #say "Done";
     return \@res
 }
 
@@ -552,5 +552,22 @@ get '/media/asset/*asset' => sub( $c ) {
         $c->res->headers->content_type('application/x-mpegurl');
     };
 };
+
+get '/endless/page' => sub( $c ) {
+    my $offset = $c->param('offset') // 0;
+    my $limit = $c->param('limit') // 20;
+    $c->stash( offset => $offset );
+    $c->stash( limit => $limit );
+    $c->render('endless_page')
+};
+
+get '/endless' => sub( $c ) {
+    my $offset = $c->param('offset') // 0;
+    my $limit = $c->param('limit') // 20;
+    $c->stash( offset => $offset );
+    $c->stash( limit => $limit );
+    $c->render('endless')
+};
+
 
 app->start;
