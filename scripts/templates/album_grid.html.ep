@@ -1,0 +1,24 @@
+<title>Offset <%= $offset %></title>
+% for my $album ($albums->@*) {
+%     my $art = $album->image;
+<div class="album" id="album-<%= $album->collection_id %>">
+  <a href="/media/playlist/<%= $album->collection_id %>" class="album-link">
+%     if( $art ) {
+    <img width="400px" height="400px" src="/media/asset/<%= Mojo::File->new( $art->filename->native )->to_rel($base) %>"
+         alt="<%= $album->title %>" />
+%     } else {
+    <div>(image missing) <%= $album->title // $album->collection_id %></div>
+%     }
+  </a>
+      <!-- play link to playlist -->
+</div>
+% }
+<!-- turn last element into infinite scroll, or just append one?! -->
+ <a href="/media?offset=<%= $offset+20 %>"
+    hx-trigger="intersect once"
+    hx-get="/media/album_grid?offset=<%= $offset+20 %>"
+    hx-target="this"
+    hx-swap="outerHTML"
+>
+    More
+</a>

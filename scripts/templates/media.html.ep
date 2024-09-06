@@ -20,29 +20,14 @@
 
 </head>
 <body
-  hx-boost="true"
-   hx-select="#container"
-   hx-target="#container"
-   -hx-swap="outerHTML"
+   hx-boost="true"
+   -x-hx-select="#container"
+   -x-hx-target="#container"
+   -x-hx-swap="outerHTML"
 >
-    <a href="<%= url_for("/diagnostics") %>">Songs</a>
+  <a href="<%= url_for("/diagnostics") %>">Songs</a>
   <div id="container" class="grid-container" hx-history-elt>
-
-% for my $album ($albums->@*) {
-%     my $art = $album->image;
-      <div class="album">
-      <!-- <div class="album-title"><%= $album->title %></div> -->
-      <a href="/media/playlist/<%= $album->collection_id %>" class="album-link">
-%     if( $art ) {
-      <img width="400px" height="400px" src="/media/asset/<%= Mojo::File->new( $art->filename->native )->to_rel($base) %>" />
-%     } else {
-      <div>(image missing) <%= $album->title // $album->collection_id %></div>
-%     }
-%#      <%= $album->title %> - <%= $album->artist %>
-      </a>
-      <!-- play link to playlist -->
-    </div>
-% }
+%= include('album_grid', albums => $albums, offset => $offset)
   </div>
   <div id="player" hx-preserve="true">
   <video
