@@ -378,8 +378,8 @@ $filesystem->init_config(
 );
 
 sub get_recent( $count=20, $offset=0) {
-    say "Fetching from DB";
-    my $items = $filesystem->selectall_named( <<'SQL' );
+    #say "Fetching from DB";
+    my $items = $filesystem->selectall_named( <<'SQL', $count, $offset );
     with latest_changed_audio_directories as (
         select c.collection_id
              , c.parent_id
@@ -392,8 +392,8 @@ sub get_recent( $count=20, $offset=0) {
            and c.collection_type = 'directory'
       group by c.title, c.parent_id, c.collection_id
       order by last_update desc
-         limit 20
-        offset 0
+         limit $count
+        offset $offset
     )
     select distinct c.collection_id
          , c.collection_json
