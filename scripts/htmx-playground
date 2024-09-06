@@ -479,7 +479,8 @@ sub as_videojs_playlist($collection, $base) {
 
 my $base = '/var/run/user/1000/gvfs/smb-share:server=dune,share=media/mp3/';
 get '/media' => sub( $c ) {
-    my $albums = get_recent(20, 0);
+    my $offset = $c->param('offset') // 0;
+    my $albums = get_recent(20, $offset);
     for my $album ($albums->@*) {
         if( $album->image ) {
             $album->{image} = $album->fetch_image( $filesystem );
@@ -487,7 +488,23 @@ get '/media' => sub( $c ) {
     };
     $c->stash( albums => $albums );
     $c->stash( base   => $base );
+    $c->stash( offset => $offset );
     $c->render('media')
+};
+
+get '/media/album_grid' => sub( $c ) {
+    # Redirect to /media if not hx-request
+    my $offset = $c->param('offset') // 0;
+    my $albums = get_recent(20, $offset);
+    for my $album ($albums->@*) {
+        if( $album->image and ! ref $album->image ) {
+            $album->{image} = $album->fetch_image( $filesystem );
+        }
+    };
+    $c->stash( albums => $albums );
+    $c->stash( base   => $base );
+    $c->stash( offset => $offset );
+    $c->render('album_grid')
 };
 
 get '/media/diagnostics' => sub( $c ) {
