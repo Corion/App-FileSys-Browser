@@ -216,7 +216,7 @@ htmx.onLoad( (elt) => {
 % use Encode 'decode';
 % my $art = $tracks->image;
   <div id="container" hx-history-elt>
-    <nav><a href="/media">List</a></nav>
+    <nav><a href="/media">List</a></nav><!-- Can we link to the link that brought us here ?! -->
     <div class="grid-tracks">
 % if( $art ) {
         <img id="cover" width="400px" height="400px" src="/media/image/<%= Mojo::File->new( $art->filename->native )->to_rel( $base ) %>" />
