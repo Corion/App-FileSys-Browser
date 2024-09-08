@@ -362,9 +362,13 @@ any '/tag-form.html' => sub($c) {
     $c->render('tag-form')
 };
 
+my ($dbpath) = grep { -f $_ }
+               '/home/corion/bin/Filesys-DB/db/filesys-db.sqlite',
+               '/var/run/user/1000/gvfs/smb-share:server=dune,share=corion/bin/Filesys-DB/db/filesys-db.sqlite',
+            ;
 my $filesystem = Filesys::DB->new(
     dbh => {
-        dsn  => 'dbi:SQLite:dbname=/var/run/user/1000/gvfs/smb-share:server=dune,share=corion/bin/Filesys-DB/db/filesys-db.sqlite',
+        dsn  => "dbi:SQLite:dbname=$dbpath",
         options => {
             sqlite_open_flags => SQLITE_OPEN_READONLY(),
             RaiseError => 1,
