@@ -7,7 +7,7 @@ sql: |
     union all
     select 'Songs', count(*) from filesystem_entry
 ---
-title: Collections without thumbnail/missing thumbnail file
+title: Collections without assigned thumbnail/missing thumbnail file
 sql: |
     with no_image as (
        select c.collection_id
@@ -37,4 +37,34 @@ sql: |
     order by c.collection_id asc
     )
     select * from debug
+---
+title: Collections missing thumbnail image
+sql: |
+    with no_image as (
+       select c.collection_id
+         from filesystem_collection c
+        where c.image is null
+    )
+    , no_assigned_image as (
+       select c.collection_id as collection_id
+            , c.title
+            , e.mime_type
+            , count(*) as images
+         from no_image c_ni
+         join filesystem_collection c on c_ni.collection_id = c.collection_id
+         join filesystem_membership m on c.collection_id = m.collection_id
+         join filesystem_entry e on m.entry_id = e.entry_id
+        where e.mime_type like 'image/%'
+     group by c.collection_id, e.mime_type
+    )
+    , debug as (
+      select c.collection_id
+           , c.title
+           , images
+        from filesystem_collection c
+        join no_contained_image si on si.collection_id = c.collection_id
+    order by c.collection_id asc
+    )
+    select * from no_contained_image
+
 
