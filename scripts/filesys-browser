@@ -15,10 +15,8 @@ use Mojo::URL;
 use Mojo::File 'path';
 
 use lib '../Filesys-DB/lib';
-use lib '../Filesys-Scanner/lib';
 use Filesys::DB;
 use Filesys::DB::Collection;
-use Audio::Directory;
 use DBD::SQLite::Constants ':file_open';
 use PerlX::Maybe;
 use Carp 'croak';

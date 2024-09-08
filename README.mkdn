@@ -1,0 +1,6 @@
+
+[![Windows](https://github.com/Corion/App-Filesys-Browser/workflows/windows/badge.svg)](https://github.com/Corion/App-Filesys-Browser/actions?query=workflow%3Awindows)
+[![MacOS](https://github.com/Corion/App-Filesys-Browser/workflows/macos/badge.svg)](https://github.com/Corion/App-Filesys-Browser/actions?query=workflow%3Amacos)
+[![Linux](https://github.com/Corion/App-Filesys-Browser/workflows/linux/badge.svg)](https://github.com/Corion/App-Filesys-Browser/actions?query=workflow%3Alinux)
+
+
