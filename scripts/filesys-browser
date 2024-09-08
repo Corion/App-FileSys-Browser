@@ -9,6 +9,7 @@ use lib 'lib';
 
 use 5.020; # for signatures
 use experimental 'signatures';
+use Encode 'encode', 'decode';
 
 use Mojo::URL;
 use Mojo::File 'path';
@@ -438,6 +439,8 @@ get '/media/playlist/<id:num>' => sub( $c ) {
 get '/media/image/*image' => sub( $c ) {
     my $filename = $c->param('image');
     $filename =~ s![\\/]\.\.(?=[\\/])!/!g;
+    $filename =~ s/&amp;/&/g;
+    $filename = decode('UTF-8', $filename );
     my $fn = Mojo::File->new( $base, $filename );
     say "Sending [$fn]";
     $c->reply->asset(Mojo::Asset::File->new(path => $fn));
@@ -447,6 +450,7 @@ get '/media/asset/*asset' => sub( $c ) {
     my $filename = $c->param('asset');
     $filename =~ s![\\/]\.\.(?=[\\/])!/!g;
     $filename =~ s/&amp;/&/g;
+    $filename = decode('UTF-8', $filename );
     my $fn = Mojo::File->new( $base, $filename );
     say "Sending [$fn]";
     $c->reply->asset(Mojo::Asset::File->new(path => $fn));
