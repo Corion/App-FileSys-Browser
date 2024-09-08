@@ -8,8 +8,7 @@ use File::Basename 'dirname';
 use lib 'lib';
 
 use 5.020; # for signatures
-use feature 'signatures';
-no warnings 'experimental::signatures';
+use experimental 'signatures';
 
 use Mojo::URL;
 use Mojo::File 'path';
