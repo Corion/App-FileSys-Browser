@@ -64,6 +64,38 @@ my %module = (
         'Mojo::URL' => 0,
         'Mojolicious::Lite' => 0,
         'Text::Markdown' => 0,
+
+        # Filesys::DB prerequisites
+        'experimental'         => 0, # because we use some features that once were experimental
+        'POSIX'                => 0, # for 'setsid' on POSIXish systems
+        'File::Spec'           => 0,
+        'Getopt::Long'         => 0,
+        'Encode'               => 0,
+        'File::Basename'       => 0,
+        'File::Copy'           => 0,
+        'JSON'                 => 0,
+        'JSON::Path'           => 0,
+        'YAML'                 => 0,
+
+        'DBD::SQLite'               => '1.71_06',
+        'DBIx::RunSQL'              => 0,
+        'PadWalker'                 => 0,
+        'Moo'                       => 2, # for some hashes-as-objects
+        'MooX::Role::DBIConnection' => '0.04', # DBI connection convenience wrapper
+        'Text::Table'               => 0,
+
+        'Digest::SHA'          => 0,
+        'MIME::Detect'         => 0,
+        'Music::Tag'           => 0,
+        'Apache::Tika::Server' => 0,
+        'Text::FrontMatter::YAML' => 0,
+        'Text::CleanFragment'  => 0,
+        'Text::Unidecode'      => 0,
+
+        'Lingua::Stem::Cistem' => 0, # for German
+        'Lingua::Stem' => 0, # for the rest
+        'Lingua::Stem::Es' => 0, # for the rest
+
     },
     TEST_REQUIRES => {
         'Test2::V0'    => 0,
