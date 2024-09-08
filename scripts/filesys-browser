@@ -239,31 +239,10 @@ websocket '/notify' => sub($c) {
 };
 
 get '/' => sub( $c ) {
-    $c->redirect_to('index.html');
+    $c->redirect_to('media');
 };
 
-sub render_index( $c ) {
-    $c->stash( version => $$ );
-    $c->stash( preview => $c->param('preview') // '(none)' );
-    $c->render(template => 'index');
-};
-get '/index.html' => \&render_index;
-post '/index.html' => sub($c) {
-    #for my $p ($c->req->params->names->@*) {
-    #    say "$p -> " . $c->param($p);
-    #}
-    my @votes = grep { /^vote_/ } $c->req->params->names->@*;
-    if( $c->req->headers->header('HX-Request')) {
-        say "Returning just the vote field $votes[0] -> " . $c->param($votes[0]);
-        $c->render( text => sprintf q{<div class="vote">%s</div>}, $c->param( $votes[0] ));
-    } else {
-        say "Returning the full page";
-        # Can we implement a redirect to a GET request here?!
-        # so that reloading can happen without problems?
-        return render_index($c);
-    }
-};
-
+# Serve precompressed assets
 get '/htmx.2.0.1.min.js' => sub($c) {
     my $fn = "htmx.2.0.1.min.js";
     my $base = "$ENV{MOJO_HOME}/public";
@@ -277,89 +256,6 @@ get '/htmx.2.0.1.min.js' => sub($c) {
     $c->res->headers->content_type($ct);
     $c->reply->file($file);
     return 200;
-};
-
-get '/query/:name' => sub( $c ) {
-    # Get results for one specific query
-    my $q = $c->param('name');
-
-    #(my $query) = grep { $_->{title} eq $q } $app->queries->@*;
-    #my @results = $app->run_queries( $query );
-    #$c->stash( res => $results[0] );
-    $c->render( 'query' );
-};
-
-post '/preview' => sub( $c ) {
-    # Get results for one specific query
-    use Text::Markdown 'markdown';
-    my $q = $c->param('content');
-    my $html = markdown( $q );
-    my $l = Mojo::IOLoop->singleton;
-    $l->timer(2 => sub {
-        say "Rendering now";
-        $c->stash( preview => $html );
-        $c->render( 'preview' );
-    });
-    $c->render_later();
-    return undef;
-};
-
-get '/ui' => 'ui';
-
-sub parse_tags( $params, $newtag ) {
-    my @tags;
-
-    for my $tag ($params->names->@*) {
-        if( $tag =~ /tag_(\w+)\z/ ) {
-            push @tags, { name => $1, id => "$1" };
-        } else {
-            my $entered = $params->param($tag);
-            if( $newtag or (length $entered and $entered =~ /\S/ and $entered =~ /\s+\z/) ) {
-                if( length $entered and $entered =~ /\S/ ) {
-                    $entered =~ s/\s+\z//;
-                    say "Adding new tag '$entered'";
-                    push @tags, { name => $entered, id => "$entered" };
-                }
-            }
-        }
-    };
-
-
-    return @tags;
-}
-
-our @tags = ({ name => 'tag1', id => 1 },
-             { name => 'tag3', id => 3 },
-             { name => 'tag2', id => 2 },
-             { name => 'tag4', id => 4 },
-            );
-any '/tags.html' => sub($c) {
-    my $entered = $c->param('tags');
-
-    my $template = 'tags'; # assume the complete page
-
-    my $p = $c->req->params;
-    if( $c->req->method eq 'POST' ) {
-        @tags = parse_tags( $p, 1 );
-        $entered = '';
-    };
-
-    $c->stash( tags => \@tags );
-    $c->stash( tagtext => $entered );
-    $c->render($template)
-};
-
-any '/tag-form.html' => sub($c) {
-    @tags = parse_tags( $c->req->params, 0 );
-    $c->stash( tags => \@tags );
-
-    my $entered = $c->param('tags');
-    if( $entered =~ /\s+\z/ ) {
-        $entered = '';
-    };
-    $c->stash( tagtext => $entered );
-    say "New tagtext is '$entered'";
-    $c->render('tag-form')
 };
 
 my ($dbpath) = grep { -f $_ }
@@ -559,22 +455,5 @@ get '/media/asset/*asset' => sub( $c ) {
         $c->res->headers->content_type('application/x-mpegurl');
     };
 };
-
-get '/endless/page' => sub( $c ) {
-    my $offset = $c->param('offset') // 0;
-    my $limit = $c->param('limit') // 20;
-    $c->stash( offset => $offset );
-    $c->stash( limit => $limit );
-    $c->render('endless_page')
-};
-
-get '/endless' => sub( $c ) {
-    my $offset = $c->param('offset') // 0;
-    my $limit = $c->param('limit') // 20;
-    $c->stash( offset => $offset );
-    $c->stash( limit => $limit );
-    $c->render('endless')
-};
-
 
 app->start;
