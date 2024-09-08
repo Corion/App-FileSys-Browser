@@ -351,7 +351,6 @@ sub fetch_playlist( $id ) {
     $res
 }
 
-
 sub as_videojs_playlist($collection, $base) {
     my $art = $collection->image;
     my @art = defined $art ?
