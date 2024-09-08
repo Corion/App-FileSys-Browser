@@ -366,6 +366,11 @@ my ($dbpath) = grep { -f $_ }
                '/home/corion/bin/Filesys-DB/db/filesys-db.sqlite',
                '/var/run/user/1000/gvfs/smb-share:server=dune,share=corion/bin/Filesys-DB/db/filesys-db.sqlite',
             ;
+my ($base) = grep { -d $_ }
+               '/home/media/mp3/',
+               '/var/run/user/1000/gvfs/smb-share:server=dune,share=media/mp3/',
+            ;
+
 my $filesystem = Filesys::DB->new(
     dbh => {
         dsn  => "dbi:SQLite:dbname=$dbpath",
@@ -480,7 +485,6 @@ sub as_videojs_playlist($collection, $base) {
     ];
 }
 
-my $base = '/var/run/user/1000/gvfs/smb-share:server=dune,share=media/mp3/';
 get '/media' => sub( $c ) {
     my $offset = $c->param('offset') // 0;
     my $albums = get_recent(20, $offset);
