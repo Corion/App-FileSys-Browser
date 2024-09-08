@@ -344,7 +344,7 @@ sub fetch_playlist( $id ) {
 
     my $art = $res->image;
     $res->items->@* = grep {
-                $_->{entry_id} != $art->entry_id
+                ( $art && $_->{entry_id} != $art->entry_id )
             and $_->{mime_type} ne 'audio/x-mpegurl'
     } $res->items->@*;
 
