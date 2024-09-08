@@ -1,0 +1,19 @@
+% for my $album ($albums->@*) {
+%     my $art = $album->image;
+      <div class="album">
+      <!-- <div class="album-title"><%= $album->title %></div> -->
+      <a href="/media/playlist/<%= $album->collection_id %>" class="album-link">
+%     if( $art ) {
+      <img width="400px" height="400px" src="/media/asset/<%= Mojo::File->new( $art->filename->native )->to_rel($base) %>" />
+%     } else {
+      <div>(image missing) <%= $album->title // $album->collection_id %></div>
+%     }
+%#      <%= $album->title %> - <%= $album->artist %>
+      </a>
+      <!-- play link to playlist -->
+    </div>
+% }
+<!-- turn last element into infinite scroll, or just append one?! -->
+ <a href="/media?offset=<%= $offset+20 %>" hx-get="?offset=<%= $offset+20 %>"
+    hx-trigger="revealed once"
+    hx-swap="innerHTML show:top">More</a>
