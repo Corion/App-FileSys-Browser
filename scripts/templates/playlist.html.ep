@@ -208,9 +208,9 @@ htmx.onLoad( (elt) => {
 </head>
 <body hx-ext="ws" ws-connect="/notify?version=<%= $$ %>"
   hx-boost="true"
-   hx-select="#container"
-   hx-target="#container"
-   hx-swap="outerHTML"
+   -hx-select="#container"
+   -hx-target="#container"
+   -hx-swap="outerHTML"
    onload="javascript:init()"
 >
 % use Encode 'decode';
