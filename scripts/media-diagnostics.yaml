@@ -68,18 +68,31 @@ sql: |
     select * from no_contained_image
 
 ---
-title: Collection 90
+title: Empty collections
+sql: |
+    with empty_collection as (
+       select c.collection_id
+            , c.title
+            , count(*) as members
+         from filesystem_collection c
+    left join filesystem_membership m on c.collection_id = m.collection_id
+    where m.collection_id is null
+    )
+    select * from empty_collection
+
+---
+title: Collection 89
 sql: |
     select
            *
-      from filesystem_collection c where collection_id = 90
+      from filesystem_collection c where collection_id = 89
 ---
-title: Collection 90
+title: Collection 89
 sql: |
     select
            *
       from filesystem_entry e
       join filesystem_membership m on e.entry_id = m.entry_id
-     where m.collection_id = 90
+     where m.collection_id = 89
 
 
