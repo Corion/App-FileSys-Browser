@@ -382,7 +382,8 @@ sub as_videojs_playlist($collection, $base) {
 
 get '/media' => sub( $c ) {
     my $offset = $c->param('offset') // 0;
-    my $albums = get_recent(20, $offset);
+    my $count = $c->param('count') // 20;
+    my $albums = get_recent($count, $offset);
     for my $album ($albums->@*) {
         if( $album->image ) {
             $album->{image} = $album->fetch_image( $filesystem );
@@ -397,8 +398,9 @@ get '/media' => sub( $c ) {
 get '/media/album_grid' => sub( $c ) {
     # Redirect to /media if not hx-request
     my $offset = $c->param('offset') // 0;
-    my $albums = get_recent(20, $offset);
+    my $count = $c->param('count') // 20;
     my $direction = $c->param('direction');
+    my $albums = get_recent($count, $offset);
     for my $album ($albums->@*) {
         if( $album->image and ! ref $album->image ) {
             $album->{image} = $album->fetch_image( $filesystem );
