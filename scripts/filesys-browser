@@ -419,6 +419,7 @@ get '/media/diagnostics' => sub( $c ) {
     my $diagnostics = App::sqldisplay->new(
         dbh         => $filesystem->dbh,
         config_file => 'scripts/media-diagnostics.yaml',
+        spreadsheet_file => undef,
     );
     $diagnostics->load_config();
     my @results = $diagnostics->run_queries( $diagnostics->queries->@* );
