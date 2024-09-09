@@ -67,4 +67,19 @@ sql: |
     )
     select * from no_contained_image
 
+---
+title: Collection 90
+sql: |
+    select
+           *
+      from filesystem_collection c where collection_id = 90
+---
+title: Collection 90
+sql: |
+    select
+           *
+      from filesystem_entry e
+      join filesystem_membership m on e.entry_id = m.entry_id
+     where m.collection_id = 90
+
 
