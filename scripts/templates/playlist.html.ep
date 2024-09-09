@@ -58,16 +58,20 @@ function updateMediaSession(player) {
     // Somehow, player.playlist.currentItem() seems to get lost ?!
     console.log( "Current item", player.playlist.currentItem(), songqueue);
     let item = songqueue[  player.playlist.currentItem()];
-    navigator.mediaSession.metadata = new MediaMetadata({
-      album: item.album,
-      artist: item.artist,
-      artwork: [
-        {
+    const artwork = [];
+
+    if( item.poster ) {
+        artwork.push( {
           src: item.poster,
           sizes: "400x400",
           type: "image/jpeg",
-        },
-      ],
+        } );
+    }
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      album: item.album,
+      artist: item.artist,
+      artwork: artwork,
       title: item.title,
     });
 }
