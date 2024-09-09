@@ -21,6 +21,7 @@
 
 .album {
   display: grid;
+  width: 400px; height: 400px;
 }
 
 .track-playing { font-weight: bold; }
