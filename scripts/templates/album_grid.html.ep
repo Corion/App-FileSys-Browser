@@ -1,4 +1,14 @@
-<title>Offset <%= $offset %></title>
+% my $count = 20;
+% if( $direction =~ /\bprev\b/ and $offset >= $count ) {
+ <a href="/media?offset=<%= $offset-$count %>&count=<%= $count %>"
+    -hx-trigger="intersect once"
+    hx-get="/media/album_grid?offset=<%= $offset-$count %>&count=<%=$count%>&direction=prev"
+    hx-target="this"
+    hx-swap="outerHTML"
+>
+    Previous
+</a>
+% }
 % for my $album ($albums->@*) {
 %     my $art = $album->image;
 <div class="album" id="album-<%= $album->collection_id %>">
@@ -13,12 +23,13 @@
       <!-- play link to playlist -->
 </div>
 % }
-<!-- turn last element into infinite scroll, or just append one?! -->
- <a href="/media?offset=<%= $offset+20 %>"
+% if( $direction =~ /\bnext\b/ ) {
+ <a href="/media?offset=<%= $offset+$count %>"
     hx-trigger="intersect once"
-    hx-get="/media/album_grid?offset=<%= $offset+20 %>"
+    hx-get="/media/album_grid?offset=<%= $offset+$count %>&count=<%=$count%>&direction=next"
     hx-target="this"
     hx-swap="outerHTML"
 >
-    More
+    Next
 </a>
+% }

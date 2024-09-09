@@ -27,7 +27,7 @@
 >
   <a href="<%= url_for("/diagnostics") %>">Songs</a>
   <div id="container" class="grid-container" hx-history-elt>
-%= include('album_grid', albums => $albums, offset => $offset)
+%= include('album_grid', albums => $albums, offset => $offset, direction => 'prev,next')
   </div>
   <div id="player" hx-preserve="true">
   <video

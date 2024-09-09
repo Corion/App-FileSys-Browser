@@ -398,6 +398,7 @@ get '/media/album_grid' => sub( $c ) {
     # Redirect to /media if not hx-request
     my $offset = $c->param('offset') // 0;
     my $albums = get_recent(20, $offset);
+    my $direction = $c->param('direction');
     for my $album ($albums->@*) {
         if( $album->image and ! ref $album->image ) {
             $album->{image} = $album->fetch_image( $filesystem );
@@ -406,6 +407,9 @@ get '/media/album_grid' => sub( $c ) {
     $c->stash( albums => $albums );
     $c->stash( base   => $base );
     $c->stash( offset => $offset );
+    $c->stash( direction => $direction );
+    # Also, replace the URL we currently have, to reduce page size on navigation/reload
+    $c->res->headers->add( 'HX-Replace-URL' => "/media?offset=$offset&count=$count");
     $c->render('album_grid')
 };
 
