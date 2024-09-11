@@ -13,6 +13,7 @@ use Encode 'encode', 'decode';
 
 use Mojo::URL;
 use Mojo::File 'path';
+use Mojolicious::Sessions;
 
 use lib '../Filesys-DB/lib';
 use Filesys::DB;
@@ -238,7 +239,67 @@ websocket '/notify' => sub($c) {
     };
 };
 
+# User authentification
+
+{
+   my %db = (
+      foo => {pass => 'FOO', name => 'Foo De Pois'},
+      bar => {pass => 'BAZ', name => 'Bar Auangle'},
+   );
+   sub load_account ($u) { return $db{$u} // undef }
+   sub validate ($u, $p) {
+      warn "user<$u> pass<$p>\n";
+      my $account = load_account($u) or return;
+      return $account->{pass} eq $p;
+   }
+}
+
+app->plugin(
+   Authentication => {
+      load_user     => sub ($app, $uid) { load_account($uid) },
+      validate_user => sub ($c, $u, $p, $e) { validate($u, $p) ? $u : () },
+   }
+);
+
+my $session_store = Mojolicious::Sessions->new();
+$session_store->default_expiration(0); # cookies are forever
+
+app->hook(
+    before_render => sub ($c, $args) {
+        if( $c->is_user_authenticated ) {
+say "User is authenticated";
+        } else {
+say "Need login";
+        };
+        my $user = $c->is_user_authenticated ? $c->current_user : undef;
+        $c->stash(user => $user);
+        return $c;
+    }
+);
+
+get '/login' => sub ($c) { $c->render(template => 'login') };
+post '/login' => sub ($c) {
+    my $username = $c->param('username');
+    my $password = $c->param('password');
+    if ($c->authenticate($username, $password)) {
+        warn $c->is_user_authenticated ? 'YES' : 'NOT YET';
+        my $next = $c->session('return_to') // '/media';
+        $c->redirect_to($next);
+    }
+    else {
+        $c->redirect_to($c->req->url->to_abs);
+    }
+    return;
+};
+
+post '/logout' => sub ($c) {
+    $c->logout if $c->is_user_authenticated;
+    return $c->redirect_to('/');
+};
+
+
 get '/' => sub( $c ) {
+    return login_detour($c) unless $c->is_user_authenticated;
     $c->redirect_to('media');
 };
 
@@ -379,7 +440,17 @@ sub as_videojs_playlist($collection, $base) {
     ];
 }
 
+sub login_detour( $c ) {
+    # Somehow save the request parameters in the session
+    # This once more means we really need a local (in-memory if need be) session module
+    # for Mojolicious
+    $c->session( return_to => $c->req->url->to_abs );
+    return $c->redirect_to('/login');
+}
+
 get '/media' => sub( $c ) {
+    return login_detour($c) unless $c->is_user_authenticated;
+
     my $offset = $c->param('offset') // 0;
     my $count = $c->param('count') // 20;
     my $albums = get_recent($count, $offset);
@@ -395,6 +466,8 @@ get '/media' => sub( $c ) {
 };
 
 get '/media/album_grid' => sub( $c ) {
+    return $c->redirect_to('/login') unless $c->is_user_authenticated;
+
     # Redirect to /media if not hx-request
     my $offset = $c->param('offset') // 0;
     my $count = $c->param('count') // 20;
@@ -415,6 +488,8 @@ get '/media/album_grid' => sub( $c ) {
 };
 
 get '/media/diagnostics' => sub( $c ) {
+    return $c->redirect_to('/login') unless $c->is_user_authenticated;
+
     # rerun all queries
     my $diagnostics = App::sqldisplay->new(
         dbh         => $filesystem->dbh,
@@ -428,12 +503,16 @@ get '/media/diagnostics' => sub( $c ) {
 };
 
 get '/media/playlist/<id:num>.json' => sub( $c ) {
+    return $c->redirect_to('/login') unless $c->is_user_authenticated;
+
     # Find album ...
     my $tracks = fetch_playlist( $c->param('id'));
     $c->render(json => as_videojs_playlist( $tracks, $base ))
 };
 
 get '/media/playlist/<id:num>' => sub( $c ) {
+    return $c->redirect_to('/login') unless $c->is_user_authenticated;
+
     # Find album ...
     my $album = fetch_playlist( $c->param('id'));
     $c->stash( base   => $base );
@@ -442,6 +521,8 @@ get '/media/playlist/<id:num>' => sub( $c ) {
 };
 
 get '/media/image/*image' => sub( $c ) {
+    return $c->redirect_to('/login') unless $c->is_user_authenticated;
+
     my $filename = $c->param('image');
     $filename =~ s![\\/]\.\.(?=[\\/])!/!g;
     $filename =~ s/&amp;/&/g;
@@ -452,6 +533,8 @@ get '/media/image/*image' => sub( $c ) {
 };
 
 get '/media/asset/*asset' => sub( $c ) {
+    return $c->redirect_to('/login') unless $c->is_user_authenticated;
+
     my $filename = $c->param('asset');
     $filename =~ s![\\/]\.\.(?=[\\/])!/!g;
     $filename =~ s/&amp;/&/g;

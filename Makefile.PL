@@ -63,6 +63,7 @@ my %module = (
         'Mojo::IOLoop::Subprocess' => 0,
         'Mojo::URL' => 0,
         'Mojolicious::Lite' => 0,
+        'Mojolicious::Plugin::Authentication' => 0,
         'Text::Markdown' => 0,
 
         # Filesys::DB prerequisites

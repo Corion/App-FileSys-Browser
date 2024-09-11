@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta htmx.config.allowScriptTags="true">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="bootstrap.5.3.3.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+<title>Log in</title>
+
+<!-- Maybe these should go into every page as a fragment?! -->
+<script src="htmx.2.0.1.min.js"></script>
+<script src="ws.2.0.1.js"></script>
+<script src="debug.2.0.1.js"></script>
+<script src="loading-states.2.0.1.js"></script>
+<script src="idiomorph-ext.0.3.0.js"></script>
+
+<script src="/video.8.17.2.min.js"></script>
+<link rel="stylesheet" href="./video-js.8.17.2.css" />
+
+<link href="/mediaplayer.css" rel="stylesheet" crossorigin="anonymous">
+
+</head>
+<body
+   hx-boost="true"
+   -x-hx-select="#container"
+   -x-hx-target="#container"
+   -x-hx-swap="outerHTML"
+>
+  <div id="container" class="grid-container" hx-history-elt>
+      <form action="<%= url_for( '/login' )%>" method="POST">
+          <input type="text" name="username" value="" text="Username" />
+          <input type="password" name="password" value="" text="Password" />
+          <button type="submit">Log in</button>
+      </form>
+  </div>
+</body>
+</html>
