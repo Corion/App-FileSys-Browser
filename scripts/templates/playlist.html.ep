@@ -30,7 +30,7 @@ var tracklist;
 var songqueue;
 
 function fetchTracklist() {
-    const url = window.location.href + ".json";
+    const url = window.location.origin + window.location.pathname + ".json";
     const req = new Request(url);
     window.fetch(req)
     .then( (res) => {
@@ -220,7 +220,7 @@ htmx.onLoad( (elt) => {
 % use Encode 'decode';
 % my $art = $tracks->image;
   <div id="container" hx-history-elt>
-    <nav><a href="/media">List</a></nav><!-- Can we link to the link that brought us here ?! -->
+    <nav><a href="<%= url_with( "/media" )->query( offset => $offset ) %> ">List</a></nav>
     <div class="grid-tracks">
 % if( $art ) {
         <img id="cover" width="400px" height="400px" src="/media/image/<%= Mojo::File->new( $art->filename->native )->to_rel( $base ) %>" />

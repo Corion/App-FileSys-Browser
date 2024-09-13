@@ -515,6 +515,7 @@ get '/media/playlist/<id:num>' => sub( $c ) {
 
     # Find album ...
     my $album = fetch_playlist( $c->param('id'));
+    $c->stash( offset => $c->param('offset') // 0 );
     $c->stash( base   => $base );
     $c->stash( tracks => $album );
     $c->render('playlist')
