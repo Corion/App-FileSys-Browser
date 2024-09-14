@@ -228,7 +228,7 @@ htmx.onLoad( (elt) => {
         <div id="tracklist">
         % my $i = 0;
         % for my $track ($tracks->items->@*) {
-        %     next if $track->{entry_id} == $tracks->image;
+        %     next if $tracks->image && ($track->{entry_id} == $tracks->image);
         %     next if $track->{mime_type} eq 'audio/x-mpegurl';
               <div class="track-play" id="track-<%= 0+$i %>" hx-on:click="playTrack(<%= $i++ %>);">
                 <div class="track-title">
