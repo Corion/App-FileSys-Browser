@@ -65,7 +65,7 @@ sql: |
         join no_assigned_image si on si.collection_id = c.collection_id
     order by c.collection_id asc
     )
-    select * from no_contained_image
+    select * from no_assigned_image
 
 ---
 title: Empty collections
