@@ -34,9 +34,17 @@ thead {
 </style>
 
 </head>
-<body>
-    <a href="<%= url_for("/media") %>">Songs</a>
-    <div id="container" class="my-container">
+<body
+   hx-boost="true"
+   -x-hx-select="#container"
+   -x-hx-target="#container"
+   -x-hx-swap="outerHTML"
+>
+
+    <div id="container" hx-history-elt>
+    <nav id="navigation" class="navbar navbar-expand-lg sticky-top">
+        <a href="<%= url_for("/media") %>">List</a>
+    </nav>
         <div id="main_content" class="ui-main">
             <!--<div id="row" class="ui-main-left"> -->
 % for my $res (@$results) {

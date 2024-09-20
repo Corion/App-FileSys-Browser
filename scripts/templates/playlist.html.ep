@@ -220,7 +220,10 @@ htmx.onLoad( (elt) => {
 % use Encode 'decode';
 % my $art = $tracks->image;
   <div id="container" hx-history-elt>
-    <nav><a href="<%= url_with( "/media" )->query( offset => $offset ) %> ">List</a></nav>
+    <nav id="navigation" class="navbar navbar-expand-lg sticky-top">
+      <a href="<%= url_with( "/media" )->query( offset => $offset ) %> ">List</a>
+      <a href="<%= url_for("/media/diagnostics") %>">Diagnostics</a>
+    </nav>
     <div class="grid-tracks">
 % if( $art ) {
         <img id="cover" width="400px" height="400px" src="/media/image/<%= Mojo::File->new( $art->filename->native )->to_rel( $base ) %>" />

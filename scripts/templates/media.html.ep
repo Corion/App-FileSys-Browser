@@ -21,13 +21,18 @@
 </head>
 <body
    hx-boost="true"
-   -x-hx-select="#container"
-   -x-hx-target="#container"
-   -x-hx-swap="outerHTML"
+   hx-ext="ws"
+   ws-connect="/notify"
 >
-  <a href="<%= url_for("/diagnostics") %>">Songs</a>
-  <div id="container" class="grid-container" hx-history-elt>
+
+  <div id="container" hx-history-elt>
+    <nav id="navigation" class="navbar navbar-expand-lg sticky-top">
+      <a href="<%= url_for("/media/diagnostics") %>">Diagnostics</a>
+      <div id="indicator-connection" class="offline" style="display:inline">Offline</div>
+    </nav>
+    <div id="albums" class="grid-container">
 %= include('album_grid', albums => $albums, offset => $offset, direction => 'prev,next')
+    </div>
   </div>
   <div id="player" hx-preserve="true">
   <video
