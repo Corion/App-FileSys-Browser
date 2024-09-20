@@ -184,6 +184,10 @@ websocket '/notify' => sub($c) {
         # Maybe we can query the client where they are right now?!
         notify_client( $client_id => $html );
     };
+    notify_client( $client_id => <<~'HTML' );
+    <div id="indicator-connection" hx-swap-oob="true" class="online">Online</div>
+    HTML
+
 };
 
 # User authentification
