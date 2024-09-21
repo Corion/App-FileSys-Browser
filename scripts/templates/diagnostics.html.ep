@@ -34,12 +34,8 @@ thead {
 </style>
 
 </head>
-<body
-   hx-ext="ws,morphdom-swap" ws-connect="/notify?version=<%= $$ %>"
-   hx-boost="true"
-   -x-hx-select="#container"
-   -x-hx-target="#container"
-   -x-hx-swap="outerHTML"
+<body hx-ext="ws,morphdom-swap" ws-connect="/notify?version=<%= $$ %>"
+  hx-boost="true"
 >
 
     <div id="container" hx-history-elt>

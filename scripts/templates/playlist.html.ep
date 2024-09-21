@@ -255,9 +255,6 @@ function htmlInit() {
 </head>
 <body hx-ext="ws,morphdom-swap" ws-connect="/notify?version=<%= $$ %>"
   hx-boost="true"
-   -hx-select="#container"
-   -hx-target="#container"
-   -hx-swap="outerHTML"
    onload="javascript:htmlInit()"
 >
 % use Encode 'decode';

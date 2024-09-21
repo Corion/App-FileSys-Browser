@@ -19,11 +19,9 @@
 <link href="/mediaplayer.css" rel="stylesheet" crossorigin="anonymous">
 
 </head>
-<body
-   hx-boost="true"
-   hx-ext="ws,morphdom-swap" ws-connect="/notify?version=<%= $$ %>"
+<body hx-ext="ws,morphdom-swap" ws-connect="/notify?version=<%= $$ %>"
+  hx-boost="true"
 >
-
   <div id="container" hx-history-elt>
     <nav id="navigation" class="navbar navbar-expand-lg sticky-top">
       <a href="<%= url_for("/media/diagnostics") %>">Diagnostics</a>
