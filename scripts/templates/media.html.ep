@@ -33,14 +33,13 @@
 %= include('album_grid', albums => $albums, offset => $offset, direction => 'prev,next')
     </div>
   </div>
-  <div id="player" hx-preserve="true">
   <video
     hx-preserve="true"
     id="my-player"
     class="video-js"
     controls
     preload="auto"
-    autoplay="true"
+    autoplay="false"
     type="audio/mpeg"
     data-setup='{"audioPosterMode":true}'
     >
@@ -48,8 +47,9 @@
     To view this video please enable JavaScript
   </p>
   </video>
-  </div>
-  <summary id="playqueue" hx-preserve="true">
+  <detail id="playqueueContainer" hx-preserve="true">
+  <summary id="playqueue" hx-preserve="true">Queue
   </summary>
+  </detail>
 </body>
 </html>

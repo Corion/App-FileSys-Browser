@@ -27,30 +27,52 @@ var playerSetup = false;
 var playerPlaying = false;
 var tracklist;
 var songqueue;
+var fetching;
+var lastFetch;
 
 function fetchTracklist() {
     const url = window.location.origin + window.location.pathname + ".json";
-    const req = new Request(url);
-    window.fetch(req)
-    .then( (res) => {
-          res.json().then( (body) => {
-            tracklist = body.slice(0);
+    console.log("Status", fetching, lastFetch );
+    if( ! fetching ) {
+      if( lastFetch !== url ) {
+        fetching = url;
+        const req = new Request(url);
+        window.fetch(req)
+        .then( (res) => {
+              fetching = undefined;
+              if( res.ok ) {
+                  lastFetch = url;
+                  res.json().then( (body) => {
+                    console.log("Got a new playlist");
+                    tracklist = body.slice(0);
 
-            // If the player is idle, set it up with the new playlist
-            console.log('Player is playing/at a track?!', playerPlaying);
-            if( !playerPlaying ) {
-                const player = videojs('my-player');
-                console.log("Kicking of track?!");
-                player.playlist( tracklist );
-                if( ! songqueue) {
-                    // User clicked the "play" button of the player
-                    songqueue = tracklist.slice(0);
-                    updatePlayqueue();
-                }
-            };
-          });
-    });
-
+                    // If the player is idle, set it up with the new playlist
+                    console.log('Player is playing/at a track?!', playerPlaying);
+                    if( !playerPlaying ) {
+                        console.log("Setting up fetched tracklist");
+                        const player = videojs('my-player');
+                        console.log("My player is",player.el_);
+                        player.playlist( tracklist );
+                        if( ! songqueue) {
+                            songqueue = tracklist.slice(0);
+                            updatePlayqueue();
+                        }
+                    };
+                  });
+              } else {
+                console.log("Error fetching playlist, ignored");
+              }
+        })
+        .catch( (err) => {
+            lastFetch = url;
+            fetching = undefined;
+        });
+    } else {
+      console.log("Already fetched", url);
+    };
+  } else {
+    console.log("Already fetching something");
+  }
 }
 
 function updateMediaSession(player) {
@@ -88,13 +110,16 @@ function connectMediaSession(player, mediaSession) {
       player.playlist.previous();
     });
     navigator.mediaSession.setActionHandler('nexttrack', (e) => {
+      console.log("mediaSession: next");
       player.playlist.next();
     });
 
     navigator.mediaSession.setActionHandler('play', (e) => {
+      console.log("mediaSession: play");
       player.play();
     });
     navigator.mediaSession.setActionHandler('pause', (e) => {
+      console.log("mediaSession: pause");
       player.pause();
     });
     navigator.mediaSession.setActionHandler('stop', (e) => {
@@ -105,14 +130,16 @@ function connectMediaSession(player, mediaSession) {
 function initPlayer() {
     const player = videojs('my-player');
     if(! playerSetup) {
+        console.log("Fresh page here...");
         playerSetup = true;
         player.ready( () => {
-        console.log("Connecting events");
+            console.log("Connecting events");
             // Well, we don't want to necessarily change the playlist here!
             // player.playlist( tracklist );
 
             // Update our display
             player.on("playlistitem", (i) => {
+              console.log("event: playlistitem");
               const track = player.playlist.currentIndex();
 
               // This is only for songs that are on the current page ...
@@ -131,12 +158,14 @@ function initPlayer() {
             // Our own implementation of autoadvance, since the one videojs has
             // in the playlist plugin does not seem to work?!
             player.on("ended", (e) => {
+              console.log("player: ended");
               playerPlaying = false;
               if( player.playlist.nextIndex() >= 1 ) {
                 player.playlist.next();
               };
             });
             player.on(["playing",'play'], (e) => {
+              console.log("player: playing");
               playerPlaying = true;
               //console.log(e);
               //const player = videojs(e.target);
@@ -153,12 +182,16 @@ function initPlayer() {
             // as well, so things work from a lockscreen
             if ("mediaSession" in navigator) {
                 player.on('loadstart', () => {
+              console.log("event: loadstart -> mediaSession");
                     updateMediaSession(player);
                 });
                 connectMediaSession(player, navigator.mediaSession);
             };
       });
-  };
+  } else {
+      console.log("Already initialized");
+  }
+  console.log("initPlayer done");
 }
 
 let lastUrl;
@@ -178,11 +211,14 @@ function playTrack(track) {
   };
   player.playlist.currentItem(track);
   player.ready( () => {
+      console.log("Starting song", track);
       player.play();
+      //player.ready();
   });
 };
 
 function updatePlayqueue() {
+              console.log("Updating play queue div");
 
   // update the HTML of #playqueue with the new songqueue
   const playqueue = document.getElementById("playqueue");
@@ -196,25 +232,33 @@ function updatePlayqueue() {
   playqueue.replaceChildren.apply( playqueue, newSongqueue); // boom
 }
 
-function init() {
-  console.log("Initializing");
+function hxInit() {
+    console.log("Initializing HTMX");
+    //initPlayer();
+    fetchTracklist();
+};
+
+function htmlInit() {
+    console.log("Initializing HTML");
     initPlayer();
     fetchTracklist();
 };
 
-/* This now gets called on _every_ page change ... */
-htmx.onLoad( (elt) => {
-  init();
-});
+
+/* This now gets called on _every_ page change, actually for every swapped-in element ... */
+//htmx.onLoad( (elt) => {
+//  console.log("Loaded element",elt);
+//  hxInit();
+//});
 </script>
 
 </head>
-<body hx-ext="ws" ws-connect="/notify?version=<%= $$ %>"
+<body hx-ext="ws,morphdom-swap" ws-connect="/notify?version=<%= $$ %>"
   hx-boost="true"
    -hx-select="#container"
    -hx-target="#container"
    -hx-swap="outerHTML"
-   onload="javascript:init()"
+   onload="javascript:htmlInit()"
 >
 % use Encode 'decode';
 % my $art = $tracks->image;
@@ -244,14 +288,15 @@ htmx.onLoad( (elt) => {
         </div>
     </div>
   </div>
-  <div id="player" hx-preserve="true">
+  <!--<div id="player">-->
+  <!-- <a id="playlist_link" hx-preserve="true" href="#">???</a> -->
   <video
     hx-preserve="true"
     id="my-player"
     class="video-js"
     controls
     preload="auto"
-    autoplay="true"
+    autoplay="false"
     type="audio/mpeg"
     % if( $art ) {
     data-setup='{"audioPosterMode":true, "poster":"/media/image/<%= Mojo::File->new( decode( 'UTF-8', $art->{filename}->native ) )->to_rel( $base ) %>"}'
@@ -261,12 +306,14 @@ htmx.onLoad( (elt) => {
     To view this video please enable JavaScript
   </p>
   </video>
-  </div>
-  <summary id="playqueue" hx-preserve="true">
+  <!--</div>-->
+  <detail id="playqueueContainer" hx-preserve="true">
+  <summary id="playqueue" hx-preserve="true">Queue
+  </summary>
     <div>Track 1</div>
     <div>Track 2</div>
     <div>Track 3</div>
     <div>Track 4</div>
-  </summary>
+  </detail>
 </body>
 </html>
