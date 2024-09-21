@@ -1,5 +1,3 @@
-'use strict';
-
 var DOCUMENT_FRAGMENT_NODE = 11;
 
 function morphAttrs(fromNode, toNode) {
@@ -768,4 +766,4 @@ function morphdomFactory(morphAttrs) {
 
 var morphdom = morphdomFactory(morphAttrs);
 
-module.exports = morphdom;
+export default morphdom;

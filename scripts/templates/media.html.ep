@@ -11,7 +11,7 @@
 <script src="ws.2.0.1.js"></script>
 <script src="debug.2.0.1.js"></script>
 <script src="loading-states.2.0.1.js"></script>
-<script src="/morphdom.2.7.4.js"></script>
+<script type="module" src="/morphdom-esm.2.7.4.js"></script>
 
 <script src="/video.8.17.2.min.js"></script>
 <link rel="stylesheet" href="./video-js.8.17.2.css" />
