@@ -13,7 +13,7 @@
 #cover { display: grid; }
 #tracklist { display: grid; }
 
-#player {
+#my-player {
     position: fixed;
     bottom: 0px;
     right: 0px;
