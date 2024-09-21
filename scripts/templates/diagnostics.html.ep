@@ -10,7 +10,7 @@
 <script src="/ws.2.0.1.js"></script>
 <script src="/debug.2.0.1.js"></script>
 <script src="/loading-states.2.0.1.js"></script>
-<script src="/idiomorph-ext.0.3.0.js"></script>
+<script src="/morphdom.2.7.4.js"></script>
 
 <script src="/video.8.17.2.min.js"></script>
 <script src="/videojs-playlist.5.1.2.min.js"></script>
@@ -35,6 +35,7 @@ thead {
 
 </head>
 <body
+   hx-ext="ws,morphdom-swap" ws-connect="/notify?version=<%= $$ %>"
    hx-boost="true"
    -x-hx-select="#container"
    -x-hx-target="#container"

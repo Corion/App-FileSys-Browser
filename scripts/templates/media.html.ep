@@ -11,7 +11,7 @@
 <script src="ws.2.0.1.js"></script>
 <script src="debug.2.0.1.js"></script>
 <script src="loading-states.2.0.1.js"></script>
-<script src="idiomorph-ext.0.3.0.js"></script>
+<script src="/morphdom.2.7.4.js"></script>
 
 <script src="/video.8.17.2.min.js"></script>
 <link rel="stylesheet" href="./video-js.8.17.2.css" />
@@ -21,8 +21,7 @@
 </head>
 <body
    hx-boost="true"
-   hx-ext="ws"
-   ws-connect="/notify"
+   hx-ext="ws,morphdom-swap" ws-connect="/notify?version=<%= $$ %>"
 >
 
   <div id="container" hx-history-elt>
