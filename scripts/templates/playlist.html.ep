@@ -262,6 +262,7 @@ function htmlInit() {
     <nav id="navigation" class="navbar navbar-expand-lg sticky-top">
       <a href="<%= url_with( "/media" )->query( offset => $offset ) %> ">List</a>
       <a href="<%= url_for("/media/diagnostics") %>">Diagnostics</a>
+      <div id="indicator-connection" class="offline" style="display:inline">Offline</div>
     </nav>
     <div class="grid-tracks">
 % if( $art ) {
