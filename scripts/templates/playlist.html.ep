@@ -245,10 +245,10 @@ function htmlInit() {
 
 
 /* This now gets called on _every_ page change, actually for every swapped-in element ... */
-//htmx.onLoad( (elt) => {
+htmx.onLoad( (elt) => {
 //  console.log("Loaded element",elt);
-//  hxInit();
-//});
+  hxInit();
+});
 </script>
 
 </head>
