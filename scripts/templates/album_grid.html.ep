@@ -1,7 +1,6 @@
 % my $count = 20;
 % if( $direction =~ /\bprev\b/ and $offset >= $count ) {
  <a href="/media?offset=<%= $offset-$count %>&count=<%= $count %>"
-    -hx-trigger="intersect once"
     hx-get="/media/album_grid?offset=<%= $offset-$count %>&count=<%=$count%>&direction=prev"
     hx-target="this"
     hx-swap="outerHTML"
