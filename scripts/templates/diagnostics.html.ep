@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="/video-js.8.17.2.css" />
 
 <link href="/mediaplayer.css" rel="stylesheet" crossorigin="anonymous">
+<script src="/mediaplayer.js"></script>
 
 <!-- how will we handle appending to the current playlist?! -->
 <!-- tracklist: for album, songqueue: for playback -->

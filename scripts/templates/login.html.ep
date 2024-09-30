@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="./video-js.8.17.2.css" />
 
 <link href="/mediaplayer.css" rel="stylesheet" crossorigin="anonymous">
+<script src="/mediaplayer.js"></script>
 
 </head>
 <body
