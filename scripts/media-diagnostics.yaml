@@ -7,6 +7,18 @@ sql: |
     union all
     select 'Songs', count(*) from filesystem_entry
 ---
+title: Albums of artist
+sql: |
+    --for YAML
+      select distinct
+             c.collection_id
+           , c.title
+        from filesystem_entry e
+        join filesystem_membership m on m.entry_id = e.entry_id
+        join filesystem_collection c on m.collection_id = c.collection_id
+       where json_extract(e.entry_json, '$.content.artist') like '%Depeche%'
+      order by c.collection_id
+---
 title: Collections without assigned thumbnail/missing thumbnail file
 sql: |
     with no_image as (
@@ -67,24 +79,24 @@ sql: |
     )
     select * from no_assigned_image
 
----
-title: Empty collections
-sql: |
-    with empty_collection as (
-       select c.collection_id
-            , c.title
-            , count(*) as members
-         from filesystem_collection c
-    left join filesystem_membership m on c.collection_id = m.collection_id
-    where m.collection_id is null
-    )
-    select * from empty_collection
+#---
+#title: Empty collections
+#sql: |
+#    with empty_collection as (
+#       select c.collection_id
+#            , c.title
+#            , count(*) as members
+#         from filesystem_collection c
+#    left join filesystem_membership m on c.collection_id = m.collection_id
+#    where m.collection_id is null
+#    )
+#    select * from empty_collection
 
----
-title: MIME types
-sql: |
-    --for YAML
-      select mime_type, count(*)
-        from filesystem_entry
-    group by mime_type
----
+#---
+#title: MIME types
+#sql: |
+#    --for YAML
+#      select mime_type, count(*)
+#        from filesystem_entry
+#    group by mime_type
+#
