@@ -499,4 +499,23 @@ get '/media/asset/*asset' => sub( $c ) {
     };
 };
 
+# Check if our machine had gone to sleep and create a fresh network
+# connection. This is _verry_ specific to my dev setup, loading an SQLite
+# database over the network
+app->hook(
+    around_action => sub($next, $c, $action, $last) {
+        warn "Checking database connection";
+        my $db_live = eval { $filesystem->selectall_named(<<~'SQL'); 1 };
+            select 1
+        SQL
+        if( ! $db_live ) {
+            warn $@;
+            warn "Creating fresh database connection";
+            $filesystem->reconnect_dbh();
+        };
+
+        $next->($c, $action, $last);
+    }
+);
+
 app->start;
