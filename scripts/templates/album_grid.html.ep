@@ -13,7 +13,8 @@
 <div class="album" id="album-<%= $album->collection_id %>">
   <a href="<%= url_with( '/media/playlist/' . $album->collection_id )->query({ offset=>$offset }) %>" class="album-link">
 %     if( $art ) {
-    <img width="400px" height="400px" src="/media/asset/<%= Mojo::File->new( $art->filename->native )->to_rel($base) %>"
+    <img
+    src="/media/asset/<%= Mojo::File->new( $art->filename->native )->to_rel($base) %>"
          alt="<%= $album->title %>" />
 %     } else {
     <div>(image missing) <%= $album->title // $album->collection_id %></div>

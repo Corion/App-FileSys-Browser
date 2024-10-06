@@ -1,7 +1,7 @@
   /* CSS grid thing, I guess */
 .grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 400px);
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   grid-template-rows: masonry;
 }
 
@@ -21,7 +21,18 @@
 
 .album {
   display: grid;
-  width: 400px; height: 400px;
+
+  max-width: 400px;
+  max-height: 400px;
+
+  object-fit: fill;
+  aspect-ratio: 1/1;
+  width: 100%;
+}
+
+img {
+  max-width: 400px;
+  max-height: 400px;
 }
 
 .track-playing { font-weight: bold; }
