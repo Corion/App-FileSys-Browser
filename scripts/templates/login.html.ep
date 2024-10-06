@@ -15,10 +15,12 @@
 <script type="module" src="/morphdom-esm.2.7.4.js"></script>
 
 <script src="/video.8.17.2.min.js"></script>
+<script src="/videojs-playlist.5.1.2.min.js"></script>
+<script src="/mediaplayer.js"></script>
+
 <link rel="stylesheet" href="./video-js.8.17.2.css" />
 
 <link href="/mediaplayer.css" rel="stylesheet" crossorigin="anonymous">
-<script src="/mediaplayer.js"></script>
 
 </head>
 <body
