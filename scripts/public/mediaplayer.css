@@ -5,11 +5,23 @@
   grid-template-rows: masonry;
 }
 
-.grid-tracks {
-  display: grid;
-  grid-template-columns: auto auto ;
-  grid-template-rows: 1fr;
+@media (orientation: landscape) {
+    .grid-tracks {
+      display: grid;
+      grid-template-columns: auto auto ;
+      grid-template-rows: 1fr;
+    }
 }
+
+@media (orientation: portrait) {
+    .grid-tracks {
+      display: grid;
+      grid-template-columns: 1fc;
+      grid-template-rows: auto auto;
+    }
+}
+
+
 #cover { display: grid; }
 #tracklist { display: grid; }
 
