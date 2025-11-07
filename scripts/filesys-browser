@@ -505,8 +505,11 @@ get '/media/asset/*asset' => sub( $c ) {
 app->hook(
     around_action => sub($next, $c, $action, $last) {
         warn "Checking database connection";
+        # We need something that actually hits the disk
         my $db_live = eval { $filesystem->selectall_named(<<~'SQL'); 1 };
-            select 1
+            select entry_id
+              from filesystem_entry
+             limit 1
         SQL
         if( ! $db_live ) {
             warn $@;
