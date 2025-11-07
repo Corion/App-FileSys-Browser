@@ -24,9 +24,9 @@
 </div>
 % }
 % if( $direction =~ /\bnext\b/ ) {
- <a href="/media?offset=<%= $offset+$count %>"
+ <a href="<%= url_with("/media")->query( offset => $offset+$count ) %>"
     hx-trigger="intersect once"
-    hx-get="/media/album_grid?offset=<%= $offset+$count %>&count=<%=$count%>&direction=next"
+    hx-get="<%= url_with( "/media/album_grid" )->query( offset => $offset+$count, count=> $count, direction=> 'next' )%>"
     hx-target="this"
     hx-swap="outerHTML"
 >
