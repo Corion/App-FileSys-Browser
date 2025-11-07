@@ -9,7 +9,7 @@
 
 <script src="<%= url_for('/video.8.17.2.min.js') %>"></script>
 <script src="<%= url_for('/videojs-playlist.5.1.2.min.js') %>"></script>
-<link rel="stylesheet" href="<%= $c->url_for('/video-js.8.17.2.css') %>" />
+<link rel="stylesheet" href="<%= url_for('/video-js.8.17.2.css') %>" />
 
 <link href="<%= url_for( '/mediaplayer.css ') %>" rel="stylesheet" crossorigin="anonymous">
 <script src="<%= url_for( '/mediaplayer.js') %>"></script>
