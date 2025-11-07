@@ -113,6 +113,16 @@ function initPlayer() {
             // Well, we don't want to necessarily change the playlist here!
             // player.playlist( tracklist );
 
+
+            player.on("error", (event) => {
+              console.log("Player error", event.target.error.message);
+            });
+
+            const playerElement = document.getElementById('my-player');
+            playerElement.addEventListener("error", (event) => {
+              console.log("Raw player error", event.target.error.message);
+            });
+
             // Update our display
             player.on("playlistitem", (i) => {
               console.log("event: playlistitem");
