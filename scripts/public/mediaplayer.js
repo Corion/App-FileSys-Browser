@@ -168,7 +168,7 @@ function initPlayer() {
             // as well, so things work from a lockscreen
             if ("mediaSession" in navigator) {
                 player.on('loadstart', () => {
-              console.log("event: loadstart -> mediaSession");
+                    console.log("event: loadstart -> mediaSession");
                     updateMediaSession(player);
                 });
                 connectMediaSession(player, navigator.mediaSession);
