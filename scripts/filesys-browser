@@ -214,6 +214,45 @@ app->plugin(
    }
 );
 
+# If we are behind a reverse proxy, prepend our path
+if ( my $path = $ENV{MOJO_REVERSE_PROXY} ) {
+    my $path_uri = Mojo::URL->new($path);
+
+    # Set the path for our cookie to (only) our app
+    $path =~ s!/$!!;
+    warn "Cookie path is [$path]";
+    app->sessions->cookie_path( $path );
+
+    my @path_parts = grep /\S/, split m{/}, $path_uri->path;
+    app->hook( before_dispatch => sub( $c ) {
+        my $url = $c->req->url;
+        warn "URL  is     <$url>";
+        my $base = $url->base;
+        unshift @{ $base->path }, @path_parts;
+        $base->path->trailing_slash(1);
+        $url->path->leading_slash(0);
+        #$url->scheme($path_uri->protocol);
+        $base->scheme($path_uri->protocol);
+
+        if( my $f = $c->req->headers->header('X-Forwarded-Host')
+            and not $path_uri->host ) {
+            # We could guess the host here if it wasn't set in MOJO_REVERSE_PROXY
+            # This requires that the outside-facing server resets
+            # X-Forwarded-Host , so that header is not allowed to be user-controllable
+            (my $host) = split /,/, $f;
+            #$url->host( $host );
+            $base->host( $host );
+        } else {
+            #$url->host($path_uri->host);
+            $base->host($path_uri->host);
+        }
+
+        warn "Base is     <$base>";
+        warn "URL  is now <$url>";
+        $url->base( $base );
+    });
+}
+
 my $session_store = Mojolicious::Sessions->new();
 $session_store->default_expiration(0); # cookies are forever
 
