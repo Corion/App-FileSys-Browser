@@ -24,7 +24,7 @@
     </nav>
     <div class="grid-tracks">
 % if( $art ) {
-        <img id="cover" width="400px" height="400px" src="/media/image/<%= Mojo::File->new( $art->filename->native )->to_rel( $base ) %>" />
+        <img id="cover" width="400px" height="400px" src="<%= url_for("/media/image/". Mojo::File->new( $art->filename->native )->to_rel( $base )) %>" />
 % }
         <div id="tracklist">
         % my $i = 0;
@@ -54,7 +54,7 @@
     autoplay="false"
     type="audio/mpeg"
     % if( $art ) {
-    data-setup='{"audioPosterMode":true, "poster":"/media/image/<%= Mojo::File->new( decode( 'UTF-8', $art->{filename}->native ) )->to_rel( $base ) %>"}'
+    data-setup='{"audioPosterMode":true, "poster":"<%= url_for( "/media/image/". Mojo::File->new( decode( 'UTF-8', $art->{filename}->native ) )->to_rel( $base )) %>"}'
     % }
     >
   <p class="vjs-no-js">
