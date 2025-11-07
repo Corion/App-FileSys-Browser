@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Log in</title>
-% include 'htmx-header';
+%= include 'htmx-header';
 
 </head>
 <body

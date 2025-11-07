@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Most recent albums</title>
-% include 'htmx-header';
+%= include 'htmx-header';
 
 </head>
 <body hx-ext="ws,morphdom-swap" ws-connect="/notify?version=<%= $$ %>"

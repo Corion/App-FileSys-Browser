@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Diagnostics</title>
-% include 'htmx-header';
+%= include 'htmx-header';
 
 <!-- how will we handle appending to the current playlist?! -->
 <!-- tracklist: for album, songqueue: for playback -->
