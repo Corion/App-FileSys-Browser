@@ -410,10 +410,10 @@ sub fetch_playlist( $id ) {
     $res
 }
 
-sub as_videojs_playlist($collection, $base) {
+sub as_videojs_playlist($collection, $base, $url_base) {
     my $art = $collection->image;
     my @art = defined $art ?
-      ( poster => "/media/image/". Mojo::File->new( $art->{ filename }->native )->to_rel( $base ))
+      ( poster => "$url_base/media/image/". Mojo::File->new( $art->{ filename }->native )->to_rel( $base ))
     : ();
     my $art_id = $art->{entry_id} // 0;
     return [
@@ -426,7 +426,7 @@ sub as_videojs_playlist($collection, $base) {
                 sources => [
                         +{
                             type => 'audio/mpeg',
-                        , src => "/media/asset/" . Mojo::File->new( $track->{ filename }->native)->to_rel($base)
+                        , src => "$url_base/media/asset/" . Mojo::File->new( $track->{ filename }->native)->to_rel($base)
                         }
                 ],
                 @art
@@ -506,7 +506,8 @@ get '/media/playlist/<id:num>.json' => sub( $c ) {
 
     # Find album ...
     my $tracks = fetch_playlist( $c->param('id'));
-    $c->render(json => as_videojs_playlist( $tracks, $base ))
+    my $url_base = $c->url_for('/');
+    $c->render(json => as_videojs_playlist( $tracks, $base, $url_base ))
 };
 
 get '/media/playlist/<id:num>' => sub( $c ) {
