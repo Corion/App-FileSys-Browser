@@ -23,7 +23,7 @@
       <!-- play link to playlist -->
 </div>
 % }
-% if( $direction =~ /\bnext\b/ ) {
+% if( $direction =~ /\bnext\b/ and $albums->@* > 0) {
  <a href="<%= url_with("/media")->query( offset => $offset+$count ) %>"
     hx-trigger="intersect once"
     hx-get="<%= url_with( "/media/album_grid" )->query( offset => $offset+$count, count=> $count, direction=> 'next' )%>"
