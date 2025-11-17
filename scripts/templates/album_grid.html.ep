@@ -1,7 +1,7 @@
 % my $count = 20;
 % if( $direction =~ /\bprev\b/ and $offset >= $count ) {
- <a href="<%= url_with( "/media" )->query( offset=> $offset-$count, count => $count ) %>"
-    hx-get="<%= url_with( "/media/album_grid" )->query( offset=> $offset-$count, count=> $count, direction => 'prev' )%>"
+ <a href="<%= url_with( "/media" )->query( offset=> $offset-$count, count => $count, q => $filter ) %>"
+    hx-get="<%= url_with( "/media/album_grid" )->query( offset=> $offset-$count, count=> $count, direction => 'prev', q => $filter )%>"
     hx-target="this"
     hx-swap="outerHTML"
 >
@@ -24,9 +24,9 @@
 </div>
 % }
 % if( $direction =~ /\bnext\b/ and $albums->@* > 0) {
- <a href="<%= url_with("/media")->query( offset => $offset+$count ) %>"
+ <a href="<%= url_with("/media")->query( offset => $offset+$count, q => $filter ) %>"
     hx-trigger="intersect once"
-    hx-get="<%= url_with( "/media/album_grid" )->query( offset => $offset+$count, count=> $count, direction=> 'next' )%>"
+    hx-get="<%= url_with( "/media/album_grid" )->query( offset => $offset+$count, count=> $count, direction=> 'next', q => $filter )%>"
     hx-target="this"
     hx-swap="outerHTML"
 >

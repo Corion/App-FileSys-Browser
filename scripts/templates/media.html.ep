@@ -13,6 +13,16 @@
     <nav id="navigation" class="navbar navbar-expand-lg sticky-top">
       <a href="<%= url_for("/media/diagnostics") %>">Diagnostics</a>
       <div id="indicator-connection" class="offline" style="display:inline">Offline</div>
+      <form method="GET"
+            hx-encoding="multipart/form-data"
+            enctype='multipart/form-data'
+            action="<%= url_for("/") %>"
+            hx-post="<%= url_for("/") %>"
+            hx-trigger="input changed delay:300ms, keyup changed delay:300ms"
+            hx-target="#albums"
+        >
+        <input type="text" name="q" value="<%= $filter %>" placeholder="Search" />
+      </form>
     </nav>
     <div id="albums" class="grid-container">
 %= include('album_grid', albums => $albums, offset => $offset, direction => 'prev,next')

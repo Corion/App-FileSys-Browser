@@ -375,6 +375,43 @@ SQL
     return \@res
 }
 
+sub get_filter( $filter, $count=20, $offset=0) {
+    #say "Fetching from DB";
+    $filter = "%" . $filter . "%";
+    my $items = $filesystem->selectall_named( <<'SQL', $filter, $count, $offset );
+    with filtered_audio_files as (
+        select c.collection_id
+             , c.parent_id
+             , c.title as albumtitle
+             , e.artist
+             , e.title as songtitle
+          FROM filesystem_membership m
+          join filesystem_collection c on m.collection_id=c.collection_id
+          join filesystem_entry e on m.entry_id=e.entry_id
+         where e.mime_type like 'audio/%'
+           and c.collection_type = 'directory'
+           and (   albumtitle like $filter
+                or artist like $filter
+                or songtitle like $filter)
+      group by c.title, c.parent_id, c.collection_id
+    )
+    select distinct c.collection_id
+         , c.collection_json
+      from filtered_audio_files latest
+      join filesystem_collection c on latest.collection_id = c.collection_id
+     order by c.collection_id desc
+     limit $count
+    offset $offset
+SQL
+
+    #say "Inflating";
+    my @res = map {
+        Filesys::DB::Collection->from_row( $filesystem, $_ );
+    } $items->@*;
+    #say "Done";
+    return \@res
+}
+
 sub fetch_album( $artist, $name ) {
     my $filename;
     $filename = "%/$artist/$name%";
@@ -448,20 +485,40 @@ sub login_detour( $c ) {
     return $c->redirect_to('/login');
 }
 
-get '/media' => sub( $c ) {
-    return login_detour($c) unless $c->is_user_authenticated;
+sub fetch_albums( $filter, $count, $offset ) {
+    my $albums;
 
-    my $offset = $c->param('offset') // 0;
-    my $count = $c->param('count') // 20;
-    my $albums = get_recent($count, $offset);
+    # When do we reset offset/count?
+    if( $filter ) {
+        $albums = get_filter($filter, $count, $offset);
+
+    } else {
+        $albums = get_recent($count, $offset);
+    }
     for my $album ($albums->@*) {
         if( $album->image ) {
             $album->{image} = $album->fetch_image( $filesystem );
         }
     };
+
+    return $albums;
+}
+
+get '/media' => sub( $c ) {
+    return login_detour($c) unless $c->is_user_authenticated;
+
+    my $offset = $c->param('offset') // 0;
+    my $count = $c->param('count') // 20;
+
+    my $filter = $c->param('q');
+    my $albums = fetch_albums( $filter, $count, $offset );
+
     $c->stash( albums => $albums );
     $c->stash( base   => $base );
     $c->stash( offset => $offset );
+    $c->stash( filter => $filter );
+
+    # Depending on whether we are inline or not, only render the albums
     $c->render('media')
 };
 
@@ -472,18 +529,17 @@ get '/media/album_grid' => sub( $c ) {
     my $offset = $c->param('offset') // 0;
     my $count = $c->param('count') // 20;
     my $direction = $c->param('direction');
-    my $albums = get_recent($count, $offset);
-    for my $album ($albums->@*) {
-        if( $album->image and ! ref $album->image ) {
-            $album->{image} = $album->fetch_image( $filesystem );
-        }
-    };
+    my $filter = $c->param('q');
+    my $albums = fetch_albums( $filter, $count, $offset );
     $c->stash( albums => $albums );
     $c->stash( base   => $base );
     $c->stash( offset => $offset );
     $c->stash( direction => $direction );
+    $c->stash( filter => $filter );
     # Also, replace the URL we currently have, to reduce page size on navigation/reload
-    $c->res->headers->add( 'HX-Replace-URL' => "/media?offset=$offset&count=$count");
+    # We should also use
+    my $replace_url = $c->url_with('/media')->query( offset => $offset, count => $count, q => $filter );
+    $c->res->headers->add( 'HX-Replace-URL' => $replace_url);
     $c->render('album_grid')
 };
 
